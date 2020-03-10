@@ -1,0 +1,8 @@
+.snakemake/
+.ipynb_checkpoints
+fastq/
+dax/
+.DS_Store
+.vscode/
+__pycache__/
+logs

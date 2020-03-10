@@ -1,0 +1,103 @@
+def IR_ref(_):
+    '''
+    returns ref parameters for realign-refs gatk tools
+    '''
+
+    return f"-R {full_path('genome')} -known {full_path('gold_standard_indels')} -known {full_path('phase1k_indels')}"
+
+
+rule create_GATK_target_list:
+    input:
+        unpack(get_IR_input)
+    output:
+        "realigned/{sample}.intervals"
+    threads:
+        config['realignGATK']['threads']
+    log:
+        "logs/realign/{sample}.targetList"
+    conda:
+        "../env/gatk3-env.yml"
+    params:
+        gatk = config['tools']['gatk3'],
+        ref = IR_ref
+    shell:
+        "{params.gatk} RealignerTargetCreator -nt {threads} {params.ref} -I {input.bam} -o {output} &>{log}"
+
+
+rule index_bam:
+    input:
+        "{folder}/{sample}.bam"
+    output:
+        "{folder}/{sample}.bai"
+    threads:
+        config['bamindex']['threads']
+    conda:
+        "../env/align-env.yml"
+    shell:
+        "picard BuildBamIndex INPUT={input}"
+
+
+
+rule realignGATK:
+    input:
+        unpack(get_IR_input),
+        intervals = "realigned/{sample}.intervals"
+    output:
+        "realigned/{sample}.bam"
+    log:
+        "logs/realign/{sample}.log"
+    threads:
+        config['realignGATK']['threads']
+    conda:
+        "../env/gatk3-env.yml"
+    params:
+        gatk = config['tools']['gatk3'],
+        ref = IR_ref
+    shell:
+        "{params.gatk} IndelRealigner {params.ref} "
+        "-targetIntervals {input.intervals} -I {input.bam} -o {output} &>{log}"
+
+
+rule base_recalib:
+    input:
+        bam = "realigned/{sample}.bam",
+        bai = "realigned/{sample}.bai"
+    output:
+        table = "recalib/{sample}.recal1"
+    log:
+        "logs/recalib/{sample}.log"
+    threads:
+        config['recalib']['threads']
+    conda:
+        "../env/gatk4-env.yml"
+    params:
+        gatk = config['tools']['gatk'],
+        genome = f"-R {full_path('genome')}",
+        known_sites = f"--known-sites {full_path('gold_standard_indels')} --known-sites {full_path('phase1k_indels')} --known-sites {full_path(config['recalib']['known_sites'])}"
+    shell:
+        "{params.gatk} BaseRecalibrator -I {input.bam} {params.genome} {params.known_sites} -O {output.table} &>{log}; "
+
+
+rule apply_BQSR:
+    input:
+        bam = "realigned/{sample}.bam",
+        bai = "realigned/{sample}.bai",
+        table = "recalib/{sample}.recal1"
+    output:
+        bam = "recalib/{sample}.bam",
+        table = "recalib/{sample}.recal2"
+    log:
+        "logs/apply_BQSR/{sample}.log"
+    threads:
+        config['recalib']['threads']
+    conda:
+        "../env/gatk4-env.yml"
+    params:
+        gatk = config['tools']['gatk'],
+        genome = f"-R {full_path('genome')}",
+        known_sites = f"--known-sites {full_path('gold_standard_indels')} --known-sites {full_path('phase1k_indels')} --known-sites {full_path(config['recalib']['known_sites'])}"  
+    shell:
+        # apply recalibration table on input
+        "{params.gatk} ApplyBQSR -I {input.bam} {params.genome} --bqsr-recal-file {input.table} -O {output.bam} &>>{log}; "
+        # recreate recalibration table from output for QC
+        "{params.gatk} BaseRecalibrator -I {output.bam} {params.genome} {params.known_sites} -O {output.table} &>>{log}"

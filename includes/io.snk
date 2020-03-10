@@ -1,0 +1,223 @@
+import pandas as pd
+import os
+import re
+
+
+def get_files(folder_list, sample_sheet):
+    '''
+    retrieves the path to all the files in the sample_sheet
+    '''
+
+    # check whether single folder or folder list
+    if len(folder_list[0]) == 1:
+        folder_list = [folder_list]
+
+    fastq_list = []
+    short_list = []
+    for input_folder in folder_list:
+        for folder, _, files in os.walk(input_folder):
+            for file in files:
+                if '.fastq.' in file and '.md5' not in file and 'trim' not in file and 'sub' not in file:
+                    fastq_list.append(os.path.join(folder, file))
+                    short_list.append(file)
+    # import the sample sheet
+    samples = pd.read_csv(sample_sheet, sep='\t', index_col=0).set_index('name')
+
+    # print(fastq_list)
+    def get_fastq_paths(row, fastq_list = None):
+        '''
+        go through the sample list and find the respective read and index fastqs in the respective fastq_list
+        '''
+
+        # get the nomenclature for the fastq files from config
+        read1 = config['samples']['reads'][0]
+        read2 = config['samples']['reads'][1]
+        index = config['samples']['umi_barcode']
+
+        for file in fastq_list:
+            if os.path.split(file)[-1].startswith(str(row['sample'])):
+                if f'_{index}_' in file:
+                    row['index'] = file
+                elif 'barcode' in file:
+                    row['barcode'] = file
+                elif f'_{read1}' in file:
+                    row['R1'] = file
+                elif f'_{read2}' in file:
+                    row['R2'] = file
+        return row[['Lane', 'R1', 'R2', 'barcode', 'index']]
+
+    samples_df = samples.apply(get_fastq_paths, axis=1, fastq_list = fastq_list)
+    
+    short_df = samples.apply(get_fastq_paths, axis=1, fastq_list = short_list)
+    return samples_df, short_df
+
+ 
+def get_fastqs(w):
+    sample_name = f"{w.sample}"
+    fastq_path = sample_df.loc[sample_name][w.read_or_index]
+    # print(f"{w.sample}-{w.read_or_index}:", fastq_path)
+    return fastq_path
+
+def get_lane(w):
+    sample_name = f"{w.sample}"
+    lane = sample_df.loc[sample_name]['Lane']
+    return lane
+
+
+# ###################### FASTQC ###########################
+
+def get_fastqc_list(_):
+    '''
+    returns the complete list of required fastqc files depending on trim option
+    '''
+
+    fastqc_list = []
+    # create file list from the included_files tuple list
+    for file_name in sample_df.index:
+        fastqc_list.append(f"fastqc/{file_name}_R1_fastqc.zip")
+        fastqc_list.append(f"fastqc/{file_name}_R2_fastqc.zip")
+    return fastqc_list
+
+
+# ###################### ubamXT #########################################
+
+def get_FastqToSam_input(w):
+    '''
+    retrieve either ...fastq or fastq.trim pairs depending on config:trim:trimming value for bwa alignment
+    '''
+
+    # get the R1 and R2 depending on whether trim or not
+    fastqs = [f"fastq/{w.sample}_{read}.fastq.gz" for read in ['R1', 'R2']]
+
+    # add the umi.fastq if umi = True
+    if config['setup']['UMI']:
+        fastqs.append(f"fastq/{w.sample}_index.fastq.gz")
+    return fastqs
+
+
+# ############## INDEL REALIGNER ######################
+
+def get_IR_input(w):
+    '''
+    complex sample switch depending on pipeline settings
+    !!!! ELABORATE
+    if UMIs are used, do not dedup before the UMI-filtering steps (if active)
+    if UMI-filter is inactive, just dedup using umis
+    if no UMIs are used, just mark_dups before realigning
+    '''
+
+    sample_name = f"{w.sample}"
+    if config['setup']['UMI']:
+        if config['UMI_filter']['run']:
+            bam = f"bam_merge/{sample_name}.bam"
+            bai = f"bam_merge/{sample_name}.bam.bai"
+        else:
+            bam = f"umi_deduped/{sample_name}.bam"
+            bai = f"umi_deduped/{sample_name}.bai"
+    else:
+        bam = f"deduped/{sample_name}.bam"
+        bai = f"deduped/{sample_name}.bai"
+    return {'bam': bam, 'bai': bai}
+
+##########################################################
+
+
+#####################################
+#####################################
+
+
+
+
+def get_script(script_name):
+    return os.path.join(config['snakedir'], config['paths']['scripts'], config['scripts'][script_name])
+
+
+def get_filter(filter_dict):
+    '''
+    get the full path to the filter script with the name filter_name
+    '''
+    return os.path.join(config['snakedir'], config['paths']['scripts'], 'filters', filter_dict['path'])
+
+
+def get_bed_file(covered_or_padded):
+    '''
+    returns the appropriate bed_file depending on build and library if 
+    '''
+    if covered_or_padded == 'Padded':
+        bed = 'bed_file_pad'
+    else:
+        bed = 'bed_file'
+    bed_file = config['setup'].get(bed, None)
+    if bed_file:
+        return bed_file
+    else:
+        build = config['ref']['build']
+        lib = config['setup']['library']
+        lib_version = config['setup']['library_version']
+        prefix = 'SS' if lib == 'SureSelect' else lib
+        suffix = '_nochr' if build == 'hg19' else ''
+        bed_name = f"{prefix}_{lib_version}_{build}_{covered_or_padded}{suffix}.bed"
+        bed_file = os.path.join(config['paths']['mystatic'], 'bed_files', lib, build, bed_name)
+    return bed_file
+
+
+def full_path(file):
+
+    '''
+    returns the full path to a reference
+    '''
+
+    build = config['ref']['build']
+    full_ref_path = os.path.join(config['paths']['mystatic'], config['ref'][build][file])
+    return full_ref_path
+
+
+def static_path(file):
+    '''
+    returns the absolute path when given relative to static folder
+    '''
+
+    return os.path.join(config['paths']['mystatic'], file)
+
+
+def get_fastq_origin(w):
+    '''
+    returns the path to the original fastq file
+    '''
+    path = os.path.join(config['inputdir'], "fastq")
+    return f"{path}/{w.sample}_{w.type}_R{w.read}.fastq"
+
+
+def get_fastq_link(w):
+    '''
+    returns the path to the fastq-symlink in the work directory
+    '''
+    return f"fastq/{w.sample}_{w.type}_R{w.read}.fastq"
+
+
+def get_fastq_pair(w):
+    return [f"fastq/{w.sample}_{w.type}_R{read}.fastq" for read in [1, 2]]
+
+
+def get_pileup_input(w):
+    '''
+    input switch for mpileup
+    '''
+
+    file_name = f"{w.sample}_{w.type}.{w.chrom}"
+    if config['setup']['UMI'] and config['UMI_filter']['run']:
+        return f"umi/{file_name}.UF.bam"
+    elif config['recalib']['run']:
+        return f"recalib/{file_name}.bam"
+    return f"realigned/{file_name}.bam"
+
+
+def get_umi_filter_input(w):
+    '''
+    input switch for umi_filter
+    either recalib or realign depending in config['recalib']['run']
+    '''
+    file_name = f"{w.sample}_{w.type}.{w.chrom}"
+    if config['recalib']['run']:
+        return f"recalib/{file_name}.bam"
+    return f"realigned/{file_name}.bam"

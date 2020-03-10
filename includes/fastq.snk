@@ -1,0 +1,44 @@
+rule get_fastq:
+    input:
+        get_fastqs  # looks up samples from file_list
+    output:
+        "fastq/{sample}_{read_or_index}.fastq.gz"
+    threads: config['fastq']['threads']
+    wildcard_constraints:
+        sample = "[^/]+"
+    run:
+        extension = os.path.splitext(input[0])[1]
+        if extension == '.fastq':
+            # compress fastq as fastq.gz into workdir
+            shell("pigz -5 -p {threads} {input} > {output}")
+        elif extension == '.gz':
+            show_output(f"Creating symlink for file {input}")
+            shell("ln -s {input} {output}")   # create shortcut to fastq.gz in workdir/fastq
+        elif extension == '.bz2':
+            show_output(f"file extension {extension} --> unzipping with bzcat")
+            shell("bzcat {input} | pigz -5 -p {threads} > {output}")  # uncompress fastq.b2 and recompress to fastq.gz in workdir/fastq 
+
+
+rule split_fastq:
+    input:
+        "fastq/{sample}_{type}_{read_or_index}.fastq.gz"
+    output:
+        expand("fastq/{{sample}}_{{type}}_{{read_or_index}}.{split}.fastq", split=list(range(config['fastq']['split_factor'])))
+    threads: 1
+    params:
+        split_factor = config['fastq']['split_factor'],
+        split_tool = get_script('split_fastq'),
+        output_base = lambda w, input: str(input).replace(".fastq.gz", "")
+    shell:
+        "{params.split_tool} {input} {params.split_factor} {params.output_base}"
+
+
+rule compress_split_fastq:
+    input:
+        "fastq/{sample}_{type}_{read}.{split}.fastq"
+    output:
+        "fastq/{sample}_{type}_{read}.{split}.fastq.gz"
+    threads: config['fastq']['threads']
+    shell:
+        "pigz -5 -p {threads} {input}"
+

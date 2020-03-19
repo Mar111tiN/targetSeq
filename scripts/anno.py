@@ -3,7 +3,7 @@ from os import system as shell
 annovar = snakemake.config['tools']['annovar']
 
 w = snakemake.wildcards
-file_name = f"{w.sample}_{w.tumor_norm}"
+file_name = f"{w.sample}"
 input = snakemake.input
 output = snakemake.output
 params = snakemake.params

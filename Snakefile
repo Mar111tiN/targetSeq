@@ -29,14 +29,12 @@ chrom_list = get_chrom_list(config)
 include: "includes/fastq.snk"
 include: "includes/QC.snk"
 include: "includes/map.snk"
-# include: "includes/splitBAM.snk"
 include: "includes/processBAM.snk"
 include: "includes/dedup.snk"
 # include: "includes/umi_filter.snk"
-# include: "includes/varscan.snk"
-# include: "includes/annotate.snk"
-# include: "includes/EB.snk"
-# include: "includes/filter.snk"
+include: "includes/freebayes.snk"
+include: "includes/annotate.snk"
+include: "includes/filter.snk"
 
 # convenience variables
 ref_gen = full_path('genome')
@@ -63,9 +61,9 @@ wildcard_constraints:
 rule all:
     input:
         "QC/fastQC.html",
-        expand("recalib/{sample}.bam", sample = short_sample_df.index)
-        # "QC/libraryQC.html",
-        # "QC/insertQC.html",
+        expand("filter/{sample}.filter1.csv", sample = short_sample_df.index),
+        "QC/libraryQC.html",
+        "QC/insertQC.html",
 
 
 

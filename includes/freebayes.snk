@@ -1,0 +1,60 @@
+rule mpileup:
+    input:
+        get_pileup_input
+    output:
+        "pileup/{sample}_{type}.{chrom}.pileup"
+    log:
+        "logs/pileup/{sample}_{type}.{chrom}.log"
+    threads:
+        2
+    conda:
+        "../env/align-env.yml"
+    params:
+        bedfile = get_bed_file('Covered'),
+        refgen = full_path('genome'),
+        qual = f"-q {config['mpileup']['MAPQ']} -Q {config['mpileup']['Q']}"
+    shell:
+        # bed file does not have to be padded here, I think
+        "samtools mpileup -f {params.refgen} {params.qual} -l {params.bedfile} {input} > {output} 2>{log}"
+
+
+rule freebayes:
+    input:
+        bam = "recalib/{sample}.bam",
+        bai = "recalib/{sample}.bai"
+    output:
+        vcf = "freebayes/{sample}.vcf"
+    threads:
+        config['freebayes']['threads']
+    params:
+        refgen = full_path('genome'),
+        min = f"-C {config['freebayes']['min-alternate-count']} -F {config['freebayes']['min-alternate-fraction']}",
+        qual = f"-q {config['freebayes']['q']} -Q {config['freebayes']['Q']}"
+    conda:
+        "../env/freebayes-env.yml"
+    shell:
+        "freebayes -f {params.refgen} {params.min} {params.qual} {input.bam} > {output.vcf}"
+
+def get_anno_input(_):
+    if config['varscan']['vcf']:
+        indel = "varscan/{sample}_{tumor}-{norm}.{chrom}.indel.vcf"
+        snp = "varscan/{sample}_{tumor}-{norm}.{chrom}.snp.vcf"
+    else:
+        indel = "varscan/{sample}_{tumor}-{norm}.{chrom}.indel"
+        snp = "varscan/{sample}_{tumor}-{norm}.{chrom}.snp"
+    return {'indel': indel, 'snp': snp}
+
+
+rule freebayes2table:
+    input:
+        vcf = "freebayes/{sample}.vcf"
+    output:
+        "table/{sample}.csv"
+    threads: 2
+    conda:
+        "../env/vcf-env.yml"
+    params:
+        vcf2table = get_script('vcf2table'),
+        varscan2table = get_script('varscan2table')
+    script:
+        "../scripts/varscan2table.py"

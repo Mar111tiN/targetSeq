@@ -1,7 +1,7 @@
 inputdirs: 
   - /fast/users/szyskam_c/work/downloads/NGSData/Twist1 # source of fastq files (subfolders allowed)
 workdir: /fast/users/szyskam_c/scratch/projects/Twist1 # here your results are created
-snakedir: /fast/users/szyskam_c/snakes/projects/targetSeq
+snakedir: /fast/users/szyskam_c/snakes/develop/targetSeq
 samples: # here go all your samples
   samplesheet: /fast/users/szyskam_c/snakes/develop/targetSeq/sheets/testrun1.csv
   reads:
@@ -54,7 +54,7 @@ ref:
     dbsnp_common: annotation/gatk/hg38/common_all_20180418.vcf
     gold_standard_indels: annotation/gatk/hg38/Mills_and_1000G_gold_standard.indels.hg38.vcf
     phase1k_indels: annotation/gatk/hg38/1000G_phase1.snps.high_confidence.hg38.vcf # seems to work instead of indels (acc. to GATK blog: https://gatkforums.broadinstitute.org/gatk/discussion/6800/known-sites-for-indel-realignment-and-bqsr-in-hg38-bundle)
-    # bed_file: bed_files/SureSelect/hg38/SS_HAEv7_hg38_Covered.bed
+    bed_file: bed_files/Twist/hg38/DKMS_v5_hg38.bed
     # bed_file_pad: bed_files/SureSelect/hg38/SS_HAEv7_hg38_Padded.bed
 #### TOOLS SECTION ##############
 tools:
@@ -160,21 +160,18 @@ cover_bed:
   histo_steps: "0 1 10 15 50 100 120 200 500 1000 1500 2000 2500"
 bam_metrix:
   threads: 6
-  bait: bed_files/SureSelect/hg38/SS_HAEv7_hg38.bait_interval # path relative to ref folder
-  target: bed_files/SureSelect/hg38/SS_HAEv7_hg38.target_interval # path relative to ref folder
+  bait: bed_files/Twist/hg38/DKMS_v5_hg38.bed # path relative to ref folder
+  target: bed_files/Twist/hg38/DKMS_v5_hg38.bed # path relative to ref folder
 mpileup:
   Q: 25   # base quality
   MAPQ: 20 # -q in pileup
-varscan:
+freebayes:
   threads: 8
-  vcf: True # VCF output is necessary for left-alignment
-  min-coverage: 1
-  min-var-freq: 0.01
-  min-freq-for-hom: 0.75
-  normal-purity: 0.95
-  tumor-purity: 0.8
-  p-value: 0.99
-  somatic-p-value: 0.05
+  use-bed-file: False
+  min-alternate-count: 3
+  min-alternate-fraction: 0.02
+  q: 25 # base quality
+  Q: 20 # mapping quality
 annovar:
   threads: 10
   path_to_humandb: annotation/annovar/humandb

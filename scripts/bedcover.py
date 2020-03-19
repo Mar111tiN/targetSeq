@@ -17,14 +17,19 @@ def get_cover_svg(csv_file, sample):
     # sort out the necessary rows and remove first row (no coverage)
     cov = data.iloc[1:, [1, 2, 4, 5, 6, 7]]
     # add the respective columns
-    cov.columns = ["coverage", "bases_at_coverage", "percentage_at_depth", "bases_at_min_coverage", "base_freq_at_min_coverage", "total_on_target"]
+    cov.columns = ["coverage", "bases_at_coverage", "percentage_at_depth",
+                   "bases_at_min_coverage", "base_freq_at_min_coverage", "total_on_target"]
     # normalize depth percentage for simultaneous output into svg
-    cov['percentage_at_depth'] = cov['percentage_at_depth'] / cov['percentage_at_depth'].max() * 100
+    cov['percentage_at_depth'] = cov['percentage_at_depth'] / \
+        cov['percentage_at_depth'].max() * 100
     # calculate 95% coverage
-    _95 = cov.query('base_freq_at_min_coverage > 95')['base_freq_at_min_coverage'].idxmin()
+    _95 = cov.query('base_freq_at_min_coverage > 95')[
+        'base_freq_at_min_coverage'].idxmin()
 
-    plt.plot(cov['coverage'],cov['base_freq_at_min_coverage'], label='% of reads at coverage')
-    plt.plot(cov['coverage'], cov['percentage_at_depth'], label='coverage distribution')
+    plt.plot(cov['coverage'], cov['base_freq_at_min_coverage'],
+             label='% of reads at coverage')
+    plt.plot(cov['coverage'], cov['percentage_at_depth'],
+             label='coverage distribution')
     plt.xlim(0, cov['percentage_at_depth'][10:].idxmax() * 3)
     plt.title(f'{sample} - 95% of reads over {_95}-fold coverage')
     plt.legend()
@@ -45,7 +50,7 @@ exon_cover = params.exon_cover
 format_coverage = params.format_coverage
 prettifyBed = params.prettifyBed
 w = snakemake.wildcards
-sample_name = f"{w.sample}{w.type}"
+sample_name = f"{w.sample}"
 
 fastq_pair = ' '.join([os.path.join(workdir, fastq) for fastq in params.fastq])
 refgen = params.refgen

@@ -49,11 +49,11 @@ def get_anno_params(_):
 
 rule annovar:
     input:
-        "table/{sample}_{tumor_norm}.csv"
+        "table/{sample}.csv"
     output:
-        "table/{sample}_{tumor_norm}.anno.csv"
+        "table/{sample}.anno.csv"
     log:
-        "logs/annovar/{sample}_{tumor_norm}.log"
+        "logs/annovar/{sample}.log"
     threads:
         config["annovar"]["threads"]
     conda:
@@ -65,39 +65,11 @@ rule annovar:
         "../scripts/anno.py"
 
 
-rule fisher_strand:
-    input:
-        "table/{sample}_{tumor_norm}.csv"
-    output:
-        "table/{sample}_{tumor_norm}.fisher.csv"
-    log:
-        "logs/fisher/{sample}_{tumor_norm}.log"
-    threads:
-        config["Fisher_strand"]["threads"]
-    conda:
-        "../env/fisher-env.yml"
-    script:
-        "../scripts/fisher_strand.py"
-
-
-rule combine_annotations:
-    input:
-        annovar = "table/{sample}_{tumor_norm}.anno.csv",
-        fisher = "table/{sample}_{tumor_norm}.fisher.csv",
-        eb_score = "table/{sample}_{tumor_norm}.EB.csv"
-    output:
-        "table/{sample}_{tumor_norm}.raw.csv"
-    threads:
-        2
-    script:
-        "../scripts/format_table.py"
-
-
 rule edit_mutation_list:
     input:
-        "table/{sample}_{tumor_norm}.raw.csv"
+        "table/{sample}.anno.csv"
     output:
-        "filter/{sample}_{tumor_norm}.csv"
+        "filter/{sample}.csv"
     threads:
         2
     params:

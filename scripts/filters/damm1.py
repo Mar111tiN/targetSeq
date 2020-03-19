@@ -59,45 +59,15 @@ basic_df = filter_basic(anno_df, keep_syn=keep_syn)
 basic_df.to_csv(filter_basic_file, sep='\t', index=False)
 print(f"Writing basic filtered list to {filter_basic_file}.")
 
-# ############### FILTER1 ########################################
-print(f"Loading filter file {filter_setting_file}")
-filter_settings = pd.read_csv(filter_setting_file, sep='\t', index_col=0)
-
-# filter1_setting = {
-#     'variantT': 2,
-#     'Tdepth': 20,
-#     'EBscore': 1,
-#     'PoN-Ratio': 0.001,
-#     'PoN-Alt-NonZeros': 4,
-#     'FisherScore': 50,
-#     'TVAF': 0.01,
-#     'NVAF': 0.3,
-# }
-
-
 def filter1(df, _filter=''):
 
-    # get thresholds from filter_setting_file
-    thresh = filter_settings.loc[_filter, :]
-    tumor_depth = (df['TR2'] > thresh['variantT']) & (
-        df['Tdepth'] > thresh['Tdepth'])
+    tumor_depth = (df['TR2'] > 20) & (
+        df['readDepth'] > 200)
 
-    # EBFilter
-    if thresh['EBscore']:
-        eb = df['EBscore'] >= thresh['EBscore']
-    else:
-        eb = True
 
-    # other PanelOfNormal metrices
-    pon = (df['PoN-Ratio'] < thresh['PoN-Ratio']
-           ) | (df['PoN-Alt-NonZeros'] <= thresh['PoN-Alt-NonZeros'])
+    VAF = df['TVAF'] <= 0.95
 
-    # Strand Bias (as FS)
-    no_strand_bias = df['FisherScore'] < thresh['FisherScore']
-    VAF = (df['NVAF'] <= thresh['NVAF']) & (df['TVAF'] >=
-                                            thresh['TVAF']) & (df['TVAF'] > df['NVAF'])
-
-    return df[tumor_depth & (eb | pon) & no_strand_bias & VAF]
+    return df[tumor_depth & VAF]
 
 
 # from Kenichi Data

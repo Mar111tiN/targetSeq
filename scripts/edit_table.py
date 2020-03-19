@@ -116,34 +116,23 @@ clinscore_cols = [col for col in ClinScore.keys() if ClinScore[col]]
 #             return True
 #     return False
 
-
-def get_PoN_info(df):
-    print('Calculating PoN metrix')
-    df.loc[:, 'PoN-Alt-Sum'] = df['PoN-Alt'].str.replace('-', '|').str.split('|').apply(lambda array: sum([int(count) for count in array]))
-    df.loc[:, 'PoN-Ref-Sum'] = df['PoN-Ref'].str.replace('-', '|').str.split('|').apply(lambda array: sum([int(count) for count in array]))
-    df.loc[:, 'PoN-Alt-NonZeros'] = df['PoN-Alt'].str.count(r'[0-9]+') - df['PoN-Alt'].str.count('0')
-    df.loc[:, 'PoN-Ratio'] = df['PoN-Alt-Sum'] / df['PoN-Ref-Sum']
-    return df
-
-
+anno_df['TVAF'] = round(anno_df['TR2'] / anno_df['readDepth'],2)
 def resort_cols(df):
     '''
     resort the columns and removes prediction columns based on
     '''
     cols = list(df.columns)
     start_cols = cols[:11]
-    quant_cols = cols[11:26] + ['FisherScore', 'EBscore', 'PoN-Ref', 'PoN-Alt', 'PoN-Ref-Sum', 'PoN-Alt-Sum', 'PoN-Alt-NonZeros', 'PoN-Ratio']
-    if 'A|a|G|g|C|c|T|t|I|i|D|d' in cols:
-        quant_cols.append('A|a|G|g|C|c|T|t|I|i|D|d')
+    quant_cols = ['TVAF'] + cols[92:110]
     clin_cols = ['ClinScore', 'cosmic90_MutID', 'cosmic90_type', 'cosmic90_score', 'cosmic70_ID', 'cosmic70_freq', 'cosmic70_type', 'cosmic70_score', 'CLNALLELEID', 'CLNDN', 'CLNSIG', 'clinvar_score', 'icgc29_ID', 'icgc29_freq']
-    pop_col = cols[30:33]
+    pop_col = cols[11:14]
     # the added extracted and score columns make up 8 columns:
 
     # 4:    'icgc29_freq'
     # 5-7:  'clinvar_score', 'cosmic70_score', 'cosmic90_score'
     # 8:    'ClinScore'
     # 9-12: PoN-info (4 columns)
-    pred_col = cols[41:-13] if extended_output else cols[41:49]
+    pred_col = cols[22:39]
     new_cols = start_cols + quant_cols + clin_cols + pop_col + pred_col
     return df[new_cols]
 
@@ -257,10 +246,7 @@ def get_gene_lists(df, candidate_list, driver_list):
     new_cols = start_cols + list_cols + rest_cols
     return df[new_cols]
 
-
-pon_info_df = get_PoN_info(anno_df)
-
-clin_df = get_clinical_scores(pon_info_df)
+clin_df = get_clinical_scores(anno_df)
 
 # RESORT THE COLUMNS
 sorted_df = resort_cols(clin_df)

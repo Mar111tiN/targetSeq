@@ -166,7 +166,7 @@ mpileup:
   Q: 25   # base quality
   MAPQ: 20 # -q in pileup
 freebayes:
-  threads: 8
+  threads: 20
   use-bed-file: False
   min-alternate-count: 3
   min-alternate-fraction: 0.02

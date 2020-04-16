@@ -91,7 +91,7 @@ rule bam_metrix:
 
 rule bam_QC:
     input:
-        expand("bam_metrics/{samples}.metrics", samples=sample_df.index)
+        expand("bam_metrics/{sample}.metrics", sample=samples)
     output:
         "QC/libraryQC.html"
     conda:
@@ -120,7 +120,7 @@ rule insert_metrix:
 
 rule insert_QC:
     input:
-        expand("insert_metrics/{samples}.metrics", samples=sample_df.index)
+        expand("insert_metrics/{sample}.metrics", sample=samples)
     output:
         "QC/insertQC.html"
     conda:

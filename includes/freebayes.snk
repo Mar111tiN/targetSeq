@@ -1,10 +1,10 @@
 rule mpileup:
     input:
-        get_pileup_input
+        "recalib/{sample}.bam"
     output:
-        "pileup/{sample}_{type}.{chrom}.pileup"
+        "pileup/{sample}.pileup"
     log:
-        "logs/pileup/{sample}_{type}.{chrom}.log"
+        "logs/pileup/{sample}.log"
     threads:
         2
     conda:

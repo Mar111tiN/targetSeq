@@ -5,7 +5,7 @@ import argparse
 import math
 
 # ############ SETUP ##############################
-configfile: "configs/config_TWIST.yaml"
+configfile: "configs/config_TWISTbcl.yaml"
 # configfile: "configs/config.json"
 workdir: config['workdir']
 
@@ -23,15 +23,24 @@ include: "includes/utils.snk"
 
 
 # retrieve the file_df with all the file paths from the samplesheet
-sample_df, short_sample_df = get_files(config['inputdirs'], config['samples']['samplesheet'])
+sheet_file = config['samplesheet']
+# remove the header and other unneccessary info
+shell(f"cat {sheet_file} | sed -n '/Data/,$ p' > sample_short.csv")
+# make global samples variable
+samples = list(pd.read_csv('sample_short.csv', sep=',', skiprows=1)['Sample_Name'])
+print('Running samples:', ', '.join(samples))
+
 chrom_list = get_chrom_list(config)
-# ############ INCLUDES ##############################  
-include: "includes/fastq.snk"
+
+
+# ############ INCLUDES ##############################
+include: "includes/demulti.snk"
+# include: "includes/fastq.snk"
 include: "includes/QC.snk"
 include: "includes/map.snk"
 include: "includes/processBAM.snk"
 include: "includes/dedup.snk"
-# include: "includes/umi_filter.snk"
+include: "includes/umi_filter.snk"
 include: "includes/freebayes.snk"
 include: "includes/annotate.snk"
 include: "includes/filter.snk"
@@ -42,17 +51,9 @@ ref_gen = full_path('genome')
 wildcard_constraints:
     # eg sample cannot contain _ or / to prevent ambiguous wildcards
     sample = "[^_/.]+",
-    type = "[^_/.]+",
     read = "[^_/.]+",
-    tumor_norm = "[^_/.]+",
-    tumor = "[A-Za-z]+",
-    norm = "[A-Za-z]+",
-    split = "[0-9]+",
     read_or_index = "[^_/.]+",
-    trim = "[^_/.]+",
-    chrom = "(chr)?[0-9XY]+",
-    filter = "filter[0-9]+",
-    chrom_split = "[^_/.]+",
+    filter = "filter[0-9]+"
     # folder = "^((?!filter).)*$"
 
 
@@ -60,8 +61,10 @@ wildcard_constraints:
 
 rule all:
     input:
-        "QC/fastQC.html",
-        expand("filter/{sample}.filter1.csv", sample = short_sample_df.index),
+        expand("umi/{sample}.UF.bam", sample = samples),
+        "ubam/unmatched.bam",
+        # "QC/fastQC.html",
+        expand("filter/{sample}.filter1.csv", sample = samples),
         "QC/libraryQC.html",
         "QC/insertQC.html",
 
@@ -72,8 +75,8 @@ rule all:
 
 # print out of installed tools
 onstart:
-    print("    EXOM SEQUENCING PIPELINE STARTING.......")
-    print('samples', short_sample_df.loc[:, ['R1', 'R2', 'index']])
+    print("    TWIST TARGETED SEQUENCING PIPELINE STARTING.......")
+
     ##########################
     # shell("echo Conda-environment: $CONDA_PREFIX")
     # shell('echo $PATH')

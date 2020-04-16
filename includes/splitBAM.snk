@@ -1,8 +1,8 @@
 rule index_split_bam:
     input:
-        "{folder}/{sample}_{type}.{chrom_split}.bam"
+        "{folder}/{sample}.bam"
     output:
-        "{folder}/{sample}_{type}.{chrom_split}.bai"
+        "{folder}/{sample}.bai"
     threads:
         config['bamindex']['threads']
     conda:

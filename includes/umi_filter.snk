@@ -1,15 +1,15 @@
 
 rule umi_group:
     input:
-        get_umi_filter_input
+        "recalib/{sample}.bam"
     output:
-        "umi/{sample}_{type}.{chrom}.UG.bam"  # UG --> Umi-grouped
+        "umi/{sample}.UG.bam"  # UG --> Umi-grouped
     threads:
         config['UMI_filter']['group']['threads']
     conda:
         "../env/ubam-env.yml"
     log:
-        "logs/umi/{sample}_{type}.{chrom}.UG.log"
+        "logs/umi/{sample}.UG.log"
     params:
         mem = f"-Xmx{config['UMI_filter']['group']['mem']}",
         strategy = config['UMI_filter']['group']['group_strategy'],
@@ -25,9 +25,9 @@ rule umi_group:
 
 rule call_consensus:
     input:
-        "umi/{sample}_{type}.{chrom}.UG.bam"
+        "umi/{sample}.UG.bam"
     output:
-        "umi/{sample}_{type}.{chrom}.CR.bam"
+        "umi/{sample}.CR.bam"
     threads:
         config['UMI_filter']['call']['threads']
     conda:
@@ -38,11 +38,11 @@ rule call_consensus:
         error_pre = config['UMI_filter']['call']['error_rate_pre_umi'],
         error_post = config['UMI_filter']['call']['error_rate_post_umi'],
         min_input_Q = config['UMI_filter']['call']['min_input_Q'],
-        read_group = lambda w: f"{w.sample}_{w.type}"
+        read_group = lambda w: f"{w.sample}"
     shell:
         "fgbio CallMolecularConsensusReads  {params.mem} "
         "-i {input} -o {output} "
-        "--read-group-id={params.read_group}"  # output-per-base-tags
+        "--read-group-id={params.read_group} "  # output-per-base-tags
         "-M {params.min_reads} "
         "-1 {params.error_pre} "
         "-2 {params.error_post} "
@@ -52,10 +52,10 @@ rule call_consensus:
 
 rule mark_CR:
     input:
-        "umi/{sample}_{type}.{chrom}.CR.bam"
+        "umi/{sample}.CR.bam"
     output:
-        bam = "umi/{sample}_{type}.{chrom}.CR_XT.bam",
-        metrix = "umi/{sample}_{type}.{chrom}.CR_XT.metrix"
+        bam = "umi/{sample}.CR_XT.bam",
+        metrix = "umi/{sample}.CR_XT.metrix"
     threads:
         config['alignment']['threads']
     conda:
@@ -68,12 +68,12 @@ rule mark_CR:
 
 rule remap_CR:
     input:
-        bam = "umi/{sample}_{type}.{chrom}.CR_XT.bam",
+        bam = "umi/{sample}.CR_XT.bam",
         genome = os.path.join(full_path('genome_path'), 'gen_ref.done')
     output:
-        bam = "umi/{sample}_{type}.{chrom}.CRmapped.bam"
+        bam = "umi/{sample}.CRmapped.bam"
     log:
-        "logs/Umapped/{sample}_{type}.{chrom}.log"
+        "logs/Umapped/{sample}.log"
     threads:
         config['UMI_filter']['remap']['threads']
     conda:
@@ -123,9 +123,9 @@ rule remap_CR:
 
 rule filter_consensus:
     input:
-        "umi/{sample}_{type}.{chrom}.CRmapped.bam"
+        "umi/{sample}.CRmapped.bam"
     output:
-        "umi/{sample}_{type}.{chrom}.UF.bam"
+        "umi/{sample}.UF.bam"
     threads:
         config['UMI_filter']['filter']['threads']
     conda:

@@ -1,0 +1,76 @@
+# from os import system as shell
+import os
+
+def get_barcode_sheet(_):
+    if not os.path.isdir('barcodes'):
+        os.makedirs('barcodes')
+    # read the shortened sample sheet as df
+    sample_sheet = pd.read_csv('sample_short.csv', sep=',', skiprows=1).iloc[:, [1,5,7]]
+    # rename columns
+    sample_sheet = sample_sheet.rename(columns = {'Sample_Name': "barcode_name", "index": "barcode_sequence_1", "index2": "barcode_sequence_2"})
+    sample_sheet['library_name'] = config['setup']['library'] 
+    sample_sheet.iloc[:, [0,3,1,2]].to_csv('barcodes/barcodes.csv', sep='\t', index=False)
+    return 'barcodes/barcodes.csv'
+
+
+rule extract_barcodes:
+    output:
+        "barcodes/ExtractIlluminaBarcodes.done"
+    threads:
+        config['demulti']['extract']['threads']
+    conda:
+      "../env/align-env.yml"
+    params:
+      mem = f"-Xmx{config['demulti']['extract']['max_mem']}g",
+      bcl_dir = f"{config['inputdir']}/Data/Intensities/BaseCalls",
+      barcodes = get_barcode_sheet,
+      mismatch = f"MAX_MISMATCHES={config['demulti']['extract']['mismatch']} MIN_MISMATCH_DELTA={config['demulti']['extract']['min_dist']} MAX_NO_CALLS={config['demulti']['extract']['max_no_calls']}"
+    shell:
+        "picard ExtractIlluminaBarcodes {params.mem} "
+        "BASECALLS_DIR={params.bcl_dir} BARCODE_FILE={params.barcodes} LANE=1 "
+        "READ_STRUCTURE=151T8B9M8B151T "
+        "{params.mismatch} "
+        "OUTPUT_DIR=barcodes METRICS_FILE=barcodes/barcode_metrics "
+        "&& touch barcodes/ExtractIlluminaBarcodes.done"
+
+
+def get_library_sheet(_, folder = 'ubam', out='barcodes/library.txt'):
+    sample_sheet = pd.read_csv('barcodes/barcodes.csv', sep='\t').rename(columns={'library_name': 'LIBRARY_NAME', 'barcode_sequence_1': 'BARCODE_1', 'barcode_sequence_2': 'BARCODE_2', 'barcode_name': 'SAMPLE_ALIAS'})
+    sample_sheet['OUTPUT'] = folder + "/" + sample_sheet['SAMPLE_ALIAS'] + ".bam"
+    # add row for unmatched reads
+    sample_sheet.loc[sample_sheet.index.size] = ['Unmatched', 'Unmatched', 'N', 'N', f'{folder}/unmatched.bam']
+    sample_sheet.iloc[:,[-1, 0,1,2,3]].to_csv(out, sep='\t', index=False)
+    return out
+
+
+rule demulti:
+    input:
+        "barcodes/ExtractIlluminaBarcodes.done"
+    output:
+        expand("ubam/{sample}.bam", sample = samples)
+    threads:
+        config['demulti']['demulti']['threads']
+    conda:
+      "../env/align-env.yml"
+    params:
+        mem = f"-Xmx{config['demulti']['demulti']['max_mem']}g",
+        bcl_dir = f"{config['inputdir']}/Data/Intensities/BaseCalls",
+        barcode_dir = "barcodes",
+        library = get_library_sheet,
+        run = config['setup']['run']
+    shell:
+        "picard IlluminaBasecallsToSam {params.mem} "
+        "BASECALLS_DIR={params.bcl_dir} LIBRARY_PARAMS={params.library} LANE=1 "
+        "READ_STRUCTURE=151T8B8B9M151T "
+        "BARCODES_DIR={params.barcode_dir} RUN_BARCODE={params.run}  TMP_DIR=${{TMPDIR}} "
+        "MOLECULAR_INDEX_TAG=RX ADAPTERS_TO_CHECK=INDEXED SEQUENCING_CENTER=CHARITE_AGDAMM"
+
+rule get_unmatched:
+    input: 
+        "ubam/unmatched.bam"
+    output:
+        "barcodes/unmatched_barcodes.txt"
+    conda:
+        "../env/align-env.yml"
+    shell:
+        "samtools view {input} | awk '{print substr($12,6)' | sort | uniq -c | sort -rn > {output}"

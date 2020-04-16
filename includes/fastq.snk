@@ -41,4 +41,3 @@ rule compress_split_fastq:
     threads: config['fastq']['threads']
     shell:
         "pigz -5 -p {threads} {input}"
-

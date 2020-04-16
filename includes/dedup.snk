@@ -17,7 +17,7 @@ rule dedup:
 
 rule dedup_umi:
     input:
-        "bam_merge/{sample}.bam"
+        "mapped/{sample}.bam"
     output:
         "umi_deduped/{sample}.bam"
     threads:

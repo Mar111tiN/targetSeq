@@ -110,7 +110,7 @@ rule map_ubam:
         "INTERLEAVE=TRUE "
         "NON_PF=TRUE "
         "TMP_DIR=$TMPDIR | "
-        "tee >(fastqc stdin -o fastQC/{wildcards.sample}) |" # tee fastQC data
+        "tee >(fastqc stdin:{wildcards.sample} -o fastQC/) |" # tee fastQC data
         # pipe to bwa mem
         "bwa mem -M -t {params.bwa_threads} -p {params.refgen} /dev/stdin | "
         "picard MergeBamAlignment R={params.refgen} "
@@ -127,6 +127,3 @@ rule map_ubam:
         "ATTRIBUTES_TO_RETAIN=XS "
         "ATTRIBUTES_TO_RETAIN=RX "
         "TMP_DIR=$TMPDIR; "
-        "mv fastQC/{wildcards.sample}/*.zip fastQC/{wildcards.sample}_fastqc.zip; "
-        "mv fastQC/{wildcards.sample}/*.html fastQC/{wildcards.sample}_fastqc.html; "
-        "rm -r fastQC/{wildcards.sample}"

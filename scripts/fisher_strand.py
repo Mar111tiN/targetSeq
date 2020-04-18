@@ -29,28 +29,13 @@ def get_fisher_exact(row):
         return round(-10*math.log(fisher_p, 10), 1)
     return 5000
 
-
-def compute_FS(df):
-    process = os.getpid()
-    show_command(f"<{process}> Computing FisherScore for {len(df.index)} lines")
-    df['FisherScore'] = df.apply(get_fisher_exact, axis=1)
-    return df
-
-
-def get_FS_col(df, threads):
-    split = np.array_split(df, threads)
-    df_chunks = []
-    pool = Pool(threads)
-    df_chunks = pool.map(compute_FS, split)
-    return pd.concat(df_chunks).sort_values(['Chr', 'Start'])
-
-
 print(f'Computing FisherScore for file {input[0]}')
-df_table = pd.read_csv(input[0], sep='\t')
-df_fisher = get_FS_col(df_table, threads)
+df = pd.read_csv(input[0], sep='\t')
+cols = list(df.columns)[:5] 
+df['FisherScore'] = df.apply(get_fisher_exact, axis=1)
 
 # reduce to important cols
-cols = list(df_fisher.columns)[:5] + ['FisherScore']
+cols += ['FisherScore']
 # write file to filtered
-df_fisher[cols].to_csv(output[0], sep='\t', index=False)
+df[cols].to_csv(output[0], sep='\t', index=False)
 show_output(f'FisherScore for file {input[0]} written to {output[0]}', color='success')

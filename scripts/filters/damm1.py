@@ -61,8 +61,8 @@ print(f"Writing basic filtered list to {filter_basic_file}.")
 
 def filter1(df, _filter=''):
 
-    tumor_depth = (df['TR2'] > 20) & (
-        df['readDepth'] > 200)
+    tumor_depth = (df['TR2'] > config['filter']['min_TR2']) & (
+        df['readDepth'] > config['filter']['min_read_depth'])
 
 
     VAF = df['TVAF'] <= 0.95

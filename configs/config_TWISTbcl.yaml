@@ -1,7 +1,7 @@
 inputdir: /fast/users/szyskam_c/work/downloads/NGSraw/200408-Twist2 # source of raw sequencing run data
 workdir: /fast/users/szyskam_c/scratch/projects/Twist2 # here your results are created
 snakedir: /fast/users/szyskam_c/snakes/develop/targetSeq
-samplesheet: /fast/users/szyskam_c/snakes/develop/targetSeq/sheets/SampleSheet.csv
+samplesheet: /fast/users/szyskam_c/snakes/develop/targetSeq/sheets/TestRun2_sheet.csv
 setup:
   cleanup:
     run: False
@@ -149,15 +149,15 @@ bam_metrix:
   bait: bed_files/Twist/hg38/DKMS_v5_hg38.bed # path relative to ref folder
   target: bed_files/Twist/hg38/DKMS_v5_hg38.bed # path relative to ref folder
 mpileup:
-  Q: 25   # base quality
-  MAPQ: 20 # -q in pileup
+  Q: 20   # base quality
+  MAPQ: 10 # -q in pileup
 freebayes:
   threads: 20
   use-bed-file: False
   min-alternate-count: 3
-  min-alternate-fraction: 0.02
-  q: 25 # base quality
-  Q: 20 # mapping quality
+  min-alternate-fraction: 0.005
+  q: 20 # base quality
+  Q: 15 # mapping quality
 annovar:
   threads: 10
   path_to_humandb: annotation/annovar/humandb
@@ -191,29 +191,16 @@ annovar:
     - icgc29
 Fisher_strand:
   threads: 20
-EBFilter:
-  run: True
-  pon_list: PoN/HAEv7_hg38_NovaSeq/Pon_list.txt # path relative to mystatic path
-  use_cache: True
-  cache_folder: PoN/HAEv7_hg38_NovaSeq # path relative to mystatic path
-  full_pon_output: False
-  threads:
-    pileup: 12
-    makeEBcache: 20
-    EBscore: 20
-    EBsplit_factor: 20 # into how many jobs is makeEBcache divided per chromosome
-  params:
-    sep: tab
-    MAPQ: 20   # I guess this should be lower than the mapping quality used for mpileup or not?
-    Q: 25
-    fitting_penalty: 0.5
 filter:
   threads: 2
+  min_read_depth: 100
+  min_TR2: 10
   filter_settings: filter_AML.csv
   edit:
     extended_output: False
     candidate_list: annotation/damm_lists/AML_candidates.txt
     driver_list: annotation/damm_lists/AML_drivers.txt
+    hotspot_list: annotation/damm_lists/CHIP_mutations_short_hg38.csv
   filter_name: damm
   run: True
   filter1: damm1.py
@@ -232,5 +219,7 @@ primer3:  # is applied after filter step 1
   center_offSet: 5 # how much offSet primer pairs can
   use_primer_list: ''
 HDR:
+  min_HDR_count: 1 # minimum lanes around mutation to make it a putative HDR
   min_similarity: .85 # which similarities to consider as HDR
   padding: 150  # range around mutation to be scanned
+  min_q: 20 # minimum base quality to be used for HDR-calculation

@@ -16,15 +16,6 @@ rule freebayes:
     shell:
         "freebayes -f {params.refgen} {params.min} {params.qual} {input.bam} > {output.vcf}"
 
-def get_anno_input(_):
-    if config['varscan']['vcf']:
-        indel = "varscan/{sample}_{tumor}-{norm}.{chrom}.indel.vcf"
-        snp = "varscan/{sample}_{tumor}-{norm}.{chrom}.snp.vcf"
-    else:
-        indel = "varscan/{sample}_{tumor}-{norm}.{chrom}.indel"
-        snp = "varscan/{sample}_{tumor}-{norm}.{chrom}.snp"
-    return {'indel': indel, 'snp': snp}
-
 
 rule freebayes2table:
     input:

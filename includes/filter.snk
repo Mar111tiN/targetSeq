@@ -1,6 +1,6 @@
 # ################# FILTER ###################################################
 rule filter1:
-    input: "filter/{sample}.csv"
+    input: "table/{sample}.edit.csv"
     output: 
         filter1 = "table/{sample}.filter1.csv",
         basic = "filter/{sample}.basic.csv"
@@ -11,36 +11,6 @@ rule filter1:
     script:
         "../scripts/filters/damm1.py" 
 
-
-rule primer3:
-    input: "table/{sample}.filter1.csv"
-    output: "table/{sample}.filter1.primer.csv"
-    conda:
-        "../env/primer3-env.yml"
-    threads:
-        config['primer3']['threads']
-    params:
-        genome_split = full_path('genome_split')
-    script:
-        "../scripts/primer3.py"
-
-
-rule combine_filter1:
-    input:
-        filter1 = "table/{sample}.filter1.csv",
-        primer = "table/{sample}.filter1.primer.csv",
-    output: "filter/{sample}.filter1.csv"
-    threads: 2
-    run:
-        ## merge the files
-        print(f'Merging {input.primer} into {input.filter1}..')
-        filter1_df = pd.read_csv(input.filter1, sep='\t')
-        primer_df = pd.read_csv(input.primer, sep='\t')
-        merge_df = pd.merge(filter1_df, primer_df, how='inner', on=['Chr', 'Start', 'End', 'Ref', 'Alt', 'Gene'])
-
-        output = str(output)
-        print(f"Writing merged filter1-list to {output}.")
-        merge_df.to_csv(output, sep='\t', index = False)
 
 rule filter2:
     input: 

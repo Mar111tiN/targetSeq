@@ -1,52 +1,3 @@
-#################################
-# add information to table/{sample}_{tumor_norm}.csv
-def get_anno_params(_):
-    '''
-    helper function to create full annovar parameters from input_output[1]
-    '''
-
-    # get the full path to humandb
-    humandb = os.path.join(config['paths']['mystatic'], config['annovar']['path_to_humandb'])
-    # get the available anno files
-    file_list = list(os.walk(humandb))[0][-1]
-    # reduce anno files to the files compatible with genome build version
-    build = config['ref']['build']
-    build_files = []
-    for file in file_list:
-        if build in file:
-            build_files.append(file)
-
-    # filter the anno protocol for the available files for that genome build        
-    anno_refs = config['annovar']['annofiles']
-    anno_list = []
-    missing_list = []
-    for anno in anno_refs:
-        for file in build_files:
-            if anno in file:
-                anno_list.append(anno)
-                break
-        # if anno has not been found in file during for-loop
-        else:
-            missing_list.append(anno)
-
-    # create the protocol string
-    protocol = ','.join(anno_list)
-    print(f"{' '.join(missing_list)} not found for {build}! Doing without.. ")
-    # create the operation string 'g,r,f,f,f,f' assuming all but the first three dbs (ref, cytoBand, superDups) in config to be filter-based
-    operation_list = []
-    for anno in anno_list:
-        if anno == "refGene":
-            operation_list.append('g')
-        elif anno in ['cytoBand', 'genomicSuperDups']:
-            operation_list.append('r')
-        else:
-            operation_list.append('f')
-    operation = ','.join(operation_list)
-
-    options = f'{humandb}/ -buildver {build} -remove -thread {config["annovar"]["threads"]} -protocol {protocol} -operation {operation} -nastring "." -otherinfo'
-    return options
-
-
 rule annovar:
     input:
         "table/{sample}.csv"
@@ -69,12 +20,90 @@ rule edit_mutation_list:
     input:
         "table/{sample}.anno.csv"
     output:
-        "filter/{sample}.csv"
+        "table/{sample}.edit.csv"
     threads:
         2
     params:
         extended_output = config['filter']['edit']['extended_output'],
         candidate_list = config['filter']['edit']['candidate_list'],
-        driver_list = config['filter']['edit']['driver_list']
+        driver_list = config['filter']['edit']['driver_list'],
+        hotspot_list = config['filter']['edit']['hotspot_list']
     script:
         "../scripts/edit_table.py"
+
+
+rule primer3:
+    input: "table/{sample}.filter1.csv"
+    output: "table/{sample}.filter1.primer.csv"
+    conda:
+        "../env/primer3-env.yml"
+    threads:
+        config['primer3']['threads']
+    params:
+        genome_split = full_path('genome_split')
+    script:
+        "../scripts/primer3.py"
+
+
+rule fisher_strand:
+    input:
+        "table/{sample}.filter1.csv"
+    output:
+        "table/{sample}.filter1.fisher.csv"
+    log:
+        "logs/fisher/{sample}.log"
+    threads:
+        config["Fisher_strand"]["threads"]
+    conda:
+        f"../env/fisher-env.yml"
+    script:
+        "../scripts/fisher_strand.py"
+
+
+rule filter_pileup:
+    input:
+        bam = "recalib/{sample}.bam"
+    output:
+        pileup = "pileup/{sample}.pileup"
+    threads:
+        2
+    conda:
+        f"../env/align-env.yml"
+    params:
+        refgen = full_path('genome'),
+        qual = f"-q {config['mpileup']['MAPQ']} -Q {config['mpileup']['Q']}",
+        cleanpileup = get_script('cleanpileup')
+    shell:
+        "samtools mpileup -f {params.refgen} {params.qual} {input.bam} | {params.cleanpileup} > {output.pileup}"
+
+
+rule detect_HDR:
+    input:
+        filter_file = "table/{sample}.filter1.csv",
+        bam = "recalib/{sample}.bam",
+        pileup = "pileup/{sample}.pileup"
+    output:
+        HDR = "table/{sample}.filter1.HDR.csv"
+    conda:
+        f"../env/HDR-env.yml"
+    threads:
+        2
+    params:
+        min_sim = config['HDR']['min_similarity'],
+        min_q = config['HDR']['min_q'],
+        min_HDR_count = config['HDR']['min_HDR_count']
+    script:
+        "../scripts/HDR.py"
+
+
+rule combine_filter1:
+    input:
+        anno_edit = "table/{sample}.filter1.csv",
+        primer = "table/{sample}.filter1.primer.csv",
+        fisher = "table/{sample}.filter1.fisher.csv",
+        HDR = "table/{sample}.filter1.HDR.csv"
+    output: "filter/{sample}.filter1.csv"
+    threads: 2
+    script:
+        "../scripts/format_table.py"
+

@@ -11,6 +11,7 @@ config = snakemake.config
 extended_output = params.extended_output
 candidate_list = params.candidate_list
 driver_list = params.driver_list
+hotspot_list = params.hotspot_list
 
 print(f'Started editing and basic filtering for {input}.')
 anno_df = pd.read_csv(input, sep='\t')
@@ -116,7 +117,7 @@ clinscore_cols = [col for col in ClinScore.keys() if ClinScore[col]]
 #             return True
 #     return False
 
-anno_df['TVAF'] = round(anno_df['TR2'] / anno_df['readDepth'],2)
+anno_df['TVAF'] = round(anno_df['TR2'] / anno_df['readDepth'], 2)
 def resort_cols(df):
     '''
     resort the columns and removes prediction columns based on
@@ -236,6 +237,13 @@ def get_gene_lists(df, candidate_list, driver_list):
         driver_list = list(pd.read_csv(driver_file, header=None)[0])
         df['isDriver'] = df['Gene'].isin(driver_list).astype(int)
         list_cols.append('isDriver')
+
+    # add the hotspot mutations to the file
+    if hotspot_list:
+        hotspot_file = os.path.join(STATIC, hotspot_list)
+        hotspots = pd.read_csv(hotspot_file, sep='\t').drop(columns=['Protein'])
+        df = df.merge(hotspots, how='left', on=['Chr', 'Start', 'Ref', 'Alt', 'Gene'])
+        list_cols += ['ChipID', 'ChipPub', 'ChipFreq']
 
     # resort columns
     cols = list(df.columns)

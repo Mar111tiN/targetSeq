@@ -21,33 +21,10 @@ rule fast_multiQC:
     conda:
         "../env/fastQC-env.yml"
     shell:
-        "multiqc -f -o QC/ -n fastQC --interactive fastqc/; "  # interactive for big number of files
-        "rm -f fastqc/*_fastqc.html fastq/*.sub"  # leave the zip files for accumulated multiQC of all processed samples
-
+        "multiqc -f -o QC/ -n fastQC --interactive fastQC/"  # interactive for big number of files
 
 #########################################################################
 # ####################### BAM QC ########################################
-
-rule merge_recal_bam:
-    '''
-    here the chr-split recalibrated bams are merged
-    this step is needed if samples are needed for PoN-list
-    '''
-
-    input:  # here I need a switch if no UMI is involved
-        expand("recalib/{{sample}}_{{type}}.{chrom}.bam", chrom=chrom_list)
-    output:
-        bam = "recalib/{sample}_{type}.bam",
-        bai = "recalib/{sample}_{type}.bam.bai"
-    threads:
-        config['resplit_bam']['threads']
-    conda:
-        "../env/samba-env.yml"
-    shell:
-        # merge all split bams into one bam using samtools merge (also sorts the merged bam)
-        "sambamba merge -t {threads} {output.bam} recalib/{wildcards.sample}_{wildcards.type}.*.bam; "
-        # "rm {input}"
-
 
 rule cover_BED:
     input:
@@ -59,10 +36,8 @@ rule cover_BED:
         "logs/coverBED/{sample}.log"
     threads: 2
     params:
-        format_coverage = get_script('format_bed_coverage'),
         exon_cover = get_bed_file('Covered'),
         prettifyBed = get_script('prettifyBED'),
-        fastq = get_fastq_pair,
         refgen = full_path('genome')
     conda:
         "../env/bedcover-env.yml"

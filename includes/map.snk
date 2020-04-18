@@ -5,18 +5,18 @@ def get_RG_info(w):
     sample = f"{w.sample}"
     platform = config['setup']['platform']
     library = f"{config['setup']['library']}_{config['setup']['library_version']}"
-    PU = f"{config['setup']['platform_unit']}.{get_lane(w)}"  # here should come the lane
+    PU = f"{config['setup']['platform_unit']}.001"  #  lane is hardcoded to 001
     # platform_unit = asdf
     RG_info = f"--read-group-id={sample} --sample={sample} --platform-unit {PU} --platform={platform} --library={library}"
     return RG_info
 
 
-rule ubamXT:
+rule mark_adapters:
     input:
-        get_FastqToSam_input  # gets two or three fastqs depending on Umi-setup
+        "ubam/{sample}.bam"  # gets two or three fastqs depending on Umi-setup
     output:
-        bam = "ubam/{sample}.bam",
-        metrix = "ubam/{sample}.metrix.txt"
+        bam = "ubam/{sample}.marked.bam",
+        metrix = "ubam/{sample}.adapters.txt"
     threads:
         config['ubamXT']['threads']
     log:
@@ -28,9 +28,11 @@ rule ubamXT:
         read_structure = "+T +T +M" if config['setup']['UMI'] else "+T +T",
         deflater = "use_jdk_deflater=true use_jdk_inflater=true" if config['ubamXT']['use_jdk'] else ""
     shell:
-        "fgbio FastqToBam -i {input} {params.read_group_info} -s --read-structure {params.read_structure} -o /dev/stdout| "
-        "picard MarkIlluminaAdapters {params.deflater} I=/dev/stdin O={output.bam} M={output.metrix} TMP_DIR=$TMPDIR"
+        "picard MarkIlluminaAdapters {params.deflater} I={input} O={output.bam} M={output.metrix} TMP_DIR=$TMPDIR"
 
+
+######################################################################################
+# REF GENOME FOR BWA
 
 def get_sed(w):
     '''
@@ -49,7 +51,7 @@ rule make_ref_genome:
     output:
         touch(os.path.join(full_path('genome_path'), 'gen_ref.done'))
     threads:
-        config['alignment']['threads']
+        config['map_ubam']['threads']
     params:
         _dict = full_path('genome').replace('.fasta', '.dict').replace('.fa', '.dict'),
         sed_cmd = get_sed,
@@ -64,6 +66,8 @@ rule make_ref_genome:
         "bwa index {params.refgen}; "
         "samtools faidx {params.refgen}"
 
+######################################################################################
+
 
 def get_clip(_):
     '''
@@ -73,30 +77,32 @@ def get_clip(_):
 
     if config['UMI_filter']['run']:
         return "FALSE"
-    elif config['alignment']['clip_overlap']:
+    elif config['map_ubam']['clip_overlap']:
         return "TRUE"
     return "FALSE"
 
 
 rule map_ubam:
     input:
-        bam = "ubam/{sample}.bam",
+        bam = "ubam/{sample}.marked.bam",
         genome = os.path.join(full_path('genome_path'), 'gen_ref.done')
     output:
-        "mapped/{sample}.bam"
+        bam = "mapped/{sample}.bam",
+        fastqc = "fastQC/{sample}_fastqc.zip"
     log:
         "logs/mapped/{sample}.log"
     threads:
-        config['alignment']['threads'] + 4
+        config['map_ubam']['threads'] + 6
     conda:
         "../env/align-env.yml"
     params:
-        bwa_threads = config['alignment']['threads'],
+        bwa_threads = config['map_ubam']['threads'],
         refgen = full_path('genome'),
         clip_overlap = get_clip,
-        alignment_strategy = config['alignment']['strategy'],
-        deflater = "use_jdk_deflater=true use_jdk_inflater=true" if config['alignment']['use_jdk'] else ""
+        alignment_strategy = config['map_ubam']['strategy'],
+        deflater = "use_jdk_deflater=true use_jdk_inflater=true" if config['map_ubam']['use_jdk'] else ""
     shell:
+        "mkdir -p fastQC/{wildcards.sample}; "
         "picard SamToFastq {params.deflater} "
         "I={input.bam} FASTQ=/dev/stdout "
         "ClIPPING_ATTRIBUTE=XT "        # use XT tag for clipping
@@ -104,12 +110,13 @@ rule map_ubam:
         "INTERLEAVE=TRUE "
         "NON_PF=TRUE "
         "TMP_DIR=$TMPDIR | "
+        "tee >(fastqc stdin -o fastQC/{wildcards.sample}) |" # tee fastQC data
         # pipe to bwa mem
         "bwa mem -M -t {params.bwa_threads} -p {params.refgen} /dev/stdin | "
         "picard MergeBamAlignment R={params.refgen} "
         "UNMAPPED_BAM={input.bam} "
         "ALIGNED_BAM=/dev/stdin "
-        "O={output} "
+        "O={output.bam} "
         "CREATE_INDEX=TRUE "
         "ADD_MATE_CIGAR=TRUE "
         "CLIP_ADAPTERS=FALSE "  # should this be true?
@@ -119,4 +126,7 @@ rule map_ubam:
         "PRIMARY_ALIGNMENT_STRATEGY={params.alignment_strategy} "
         "ATTRIBUTES_TO_RETAIN=XS "
         "ATTRIBUTES_TO_RETAIN=RX "
-        "TMP_DIR=$TMPDIR "
+        "TMP_DIR=$TMPDIR; "
+        "mv fastQC/{wildcards.sample}/*.zip fastQC/{wildcards.sample}_fastqc.zip; "
+        "mv fastQC/{wildcards.sample}/*.html fastQC/{wildcards.sample}_fastqc.html; "
+        "rm -r fastQC/{wildcards.sample}"

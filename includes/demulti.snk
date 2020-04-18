@@ -47,7 +47,8 @@ rule demulti:
     input:
         "barcodes/ExtractIlluminaBarcodes.done"
     output:
-        expand("ubam/{sample}.bam", sample = samples)
+        expand("ubam/{sample}.bam", sample = samples),
+        "ubam/unmatched.bam"
     threads:
         config['demulti']['demulti']['threads']
     conda:
@@ -63,7 +64,8 @@ rule demulti:
         "BASECALLS_DIR={params.bcl_dir} LIBRARY_PARAMS={params.library} LANE=1 "
         "READ_STRUCTURE=151T8B8B9M151T "
         "BARCODES_DIR={params.barcode_dir} RUN_BARCODE={params.run}  TMP_DIR=${{TMPDIR}} "
-        "MOLECULAR_INDEX_TAG=RX ADAPTERS_TO_CHECK=INDEXED SEQUENCING_CENTER=CHARITE_AGDAMM"
+        "MOLECULAR_INDEX_TAG=RX ADAPTERS_TO_CHECK=INDEXED SEQUENCING_CENTER=CHARITE_AGDAMM "
+        "NUM_PROCESSORS={threads} MAX_RECORDS_IN_RAM=500000 MAX_READS_IN_RAM_PER_TILE=1200000"
 
 rule get_unmatched:
     input: 
@@ -73,4 +75,4 @@ rule get_unmatched:
     conda:
         "../env/align-env.yml"
     shell:
-        "samtools view {input} | awk '{print substr($12,6)' | sort | uniq -c | sort -rn > {output}"
+        "samtools view {input} | awk '{{print substr($12,6) }}' | sort | uniq -c | sort -rn > {output}"

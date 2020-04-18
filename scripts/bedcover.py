@@ -47,18 +47,15 @@ log = snakemake.log
 
 params = snakemake.params
 exon_cover = params.exon_cover
-format_coverage = params.format_coverage
 prettifyBed = params.prettifyBed
 w = snakemake.wildcards
 sample_name = f"{w.sample}"
 
-fastq_pair = ' '.join([os.path.join(workdir, fastq) for fastq in params.fastq])
 refgen = params.refgen
-histo_steps = snakemake.config['cover_bed']['histo_steps']
+
 cmd = f"bedtools coverage -b {input.sample} -a {exon_cover} -hist -sorted -g {refgen}.genome 2>{log} | grep \'^all\' | sort -k2,2nr | {prettifyBed} | sort -k2,2n > {output}"
 exit = shell(cmd, shell=True)
 if exit == 0:
     get_cover_svg(output, sample_name)
-# I don' think this is still needed - cover svg is much nicer
-# cmd = f"{format_coverage} {output} {fastq_pair} {histo_steps} 1>{output}.summary 2>/dev/null"
+
 shell(cmd, shell=True)

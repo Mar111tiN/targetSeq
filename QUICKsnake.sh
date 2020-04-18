@@ -9,7 +9,7 @@
 #$ -S /bin/bash
 #$ -P control
 
-export LOGDIR=/fast/users/${USER}/scratch/lox/WES/${JOB_ID}
+export LOGDIR=/fast/users/${USER}/scratch/lox/Twist/${JOB_ID}
 export TMPDIR=/fast/users/${USER}/scratch/tmp
 # export WRKDIR=$HOME/work/projects/whWES
 

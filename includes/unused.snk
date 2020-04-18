@@ -1,0 +1,42 @@
+rule mpileup:
+    input:
+        "recalib/{sample}.bam"
+    output:
+        "pileup/{sample}.pileup"
+    log:
+        "logs/pileup/{sample}.log"
+    threads:
+        2
+    conda:
+        "../env/align-env.yml"
+    params:
+        bedfile = get_bed_file('Covered'),
+        refgen = full_path('genome'),
+        qual = f"-q {config['mpileup']['MAPQ']} -Q {config['mpileup']['Q']}"
+    shell:
+        # bed file does not have to be padded here, I think
+        "samtools mpileup -f {params.refgen} {params.qual} -l {params.bedfile} {input} > {output} 2>{log}"
+
+
+
+
+############### IO #############################
+
+def get_fastq_pair(w):
+    return [f"fastq/{w.sample}_{w.type}_R{read}.fastq" for read in [1, 2]]
+
+
+
+
+
+def get_pileup_input(w):
+    '''
+    input switch for mpileup
+    '''
+
+    file_name = f"{w.sample}"
+    if config['setup']['UMI'] and config['UMI_filter']['run']:
+        return f"umi/{file_name}.UF.bam"
+    elif config['recalib']['run']:
+        return f"recalib/{file_name}.bam"
+    return f"realigned/{file_name}.bam"

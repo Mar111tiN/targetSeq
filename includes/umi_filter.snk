@@ -57,11 +57,11 @@ rule mark_CR:
         bam = "umi/{sample}.CR_XT.bam",
         metrix = "umi/{sample}.CR_XT.metrix"
     threads:
-        config['alignment']['threads']
+        config['map_ubam']['threads']
     conda:
         "../env/align-env.yml"
     params:
-        deflater = "use_jdk_deflater=true use_jdk_inflater=true" if config['alignment']['use_jdk'] else ""
+        deflater = "use_jdk_deflater=true use_jdk_inflater=true" if config['map_ubam']['use_jdk'] else ""
     shell:
         "picard MarkIlluminaAdapters {params.deflater} I={input} O={output.bam} M={output.metrix} TMP_DIR=$TMPDIR; "
 
@@ -80,12 +80,12 @@ rule remap_CR:
         "../env/align-env.yml"
     params:
         mem = f"-Xmx{config['UMI_filter']['remap']['mem']}",
-        bwa_threads = config['alignment']['threads'],
+        bwa_threads = config['map_ubam']['threads'],
         refgen = full_path('genome'),
         clip_overlap = "TRUE" if config['UMI_filter']['remap']['clip_overlap'] else "FALSE",
         clip_adapters = "TRUE" if config['UMI_filter']['remap']['clip_adapters'] else "FALSE",
-        alignment_strategy = config['alignment']['strategy'],
-        deflater = "use_jdk_deflater=true use_jdk_inflater=true" if config['alignment']['use_jdk'] else ""
+        alignment_strategy = config['map_ubam']['strategy'],
+        deflater = "use_jdk_deflater=true use_jdk_inflater=true" if config['map_ubam']['use_jdk'] else ""
     shell:
         # convert bam to fastq
         "picard SamToFastq {params.deflater} "

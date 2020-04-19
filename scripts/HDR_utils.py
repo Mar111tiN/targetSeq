@@ -284,7 +284,6 @@ def masterHDR(filter_df, tumor_bam='', pileup_file='', min_q=25, MINSIM=.90, pad
 
     ####### PILEUP ANALYSIS ##############################
 
-    print(f'Analysing {type}')
     filter_df = getHDR(
         tumor_bam, filter_df, pileup_file=pileup_file,
         MINSIM=MINSIM, padding=padding, min_HDR_count=min_HDR_count, min_q=min_q

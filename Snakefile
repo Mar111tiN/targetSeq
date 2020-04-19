@@ -44,6 +44,7 @@ include: "includes/umi_filter.snk"
 include: "includes/freebayes.snk"
 include: "includes/annotate.snk"
 include: "includes/filter.snk"
+include: "includes/filterbam.snk"
 
 # convenience variables
 ref_gen = full_path('genome')
@@ -63,6 +64,7 @@ rule all:
     input:
         expand("umi/{sample}.UF.bam", sample = samples),
         expand("filter/{sample}.filter1.csv", sample = samples),
+        expand("filterbam/{sample}.filter1.txt", sample = samples),
         "QC/libraryQC.html",
         "QC/insertQC.html",
         "barcodes/unmatched_barcodes.txt",

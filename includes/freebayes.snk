@@ -11,7 +11,7 @@ rule freebayes:
         refgen = full_path('genome'),
         min = f"-C {config['freebayes']['min-alternate-count']} -F {config['freebayes']['min-alternate-fraction']}",
         qual = f"-q {config['freebayes']['Q']} -m {config['freebayes']['MAPQ']} -R {config['freebayes']['Qsum']} ",
-        mismatch = f"-Q {config['freebayes']['mm_Q_limit']} -U {config['freebayes']['mm_count_limit']} -z {config['freebayes']['max_mm_frac']}
+        mismatch = f"-Q {config['freebayes']['mm_Q_limit']} -U {config['freebayes']['mm_count_limit']} -z {config['freebayes']['max_mm_frac']} "
     conda:
         "../env/freebayes-env.yml"
     shell:
@@ -27,7 +27,6 @@ rule freebayes2table:
     conda:
         "../env/vcf-env.yml"
     params:
-        vcf2table = get_script('vcf2table'),
-        varscan2table = get_script('varscan2table')
+        vcf2table = get_script('vcf2table')
     script:
-        "../scripts/varscan2table.py"
+        "../scripts/freebayes2table.py"

@@ -8,7 +8,6 @@ input = snakemake.input.vcf
 output = snakemake.output
 params = snakemake.params
 vcf2table = params.vcf2table
-varscan2table = params.varscan2table
 log = snakemake.log
 build = config['ref']['build']
 ref = os.path.join(config['paths']['mystatic'], config['ref'][build]['genome'])
@@ -44,7 +43,7 @@ shell(f"rm {input}.gz; rm {input}.gz.tbi; rm {input}; mv {out_ln} {input}")
 ####################################################################
 
 # concat and sort the files and write to output
-cat_cmd = f"cat {out} | sort -V -k1,2  > {output}" #| mawk 'NR > 2 {{ print }}'
+cat_cmd = f"cat {out} | sort -V -k1,2  > {output}"  # | mawk 'NR > 2 {{ print }}'
 print(cat_cmd)
 shell(cat_cmd)
 

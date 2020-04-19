@@ -1,0 +1,85 @@
+
+def mut2bed(mut_file, padding=150, bed_file=''):
+    # check for filter_bam folder (using general declaration for easy folder name changing)
+    folder = os.path.split(bed_file)[0]
+    if not os.path.isdir(folder):
+        os.makedirs(folder)
+
+    # read the anno_file
+    anno_df = pd.read_csv(mut_file, sep='\t').sort_values(['Chr', 'Start']).iloc[:,:5]
+    if not len(anno_df.index):
+        anno_df.to_csv(bed_file, index=False, sep='\t', header=False)
+        return bed_file
+
+    # get the bedfie with padded and collapsed regions
+    bed_df = anno_df.groupby('Chr').apply(reduce_regions, padding)
+    # remove Chr index
+    bed_df = bed_df.reset_index().drop(columns='level_1')
+    # write bed_df to file
+    bed_df.to_csv(bed_file, index=False, sep='\t', header=False)
+    print('MUTFILE', anno_df, '\n', 'BED', bed_df)
+    return bed_file
+
+
+def get_mut_bed(w, input):
+    '''
+    serves as a params function creating and returning the bed file for the samtools view
+    '''
+    conf = config['filter_bam']
+    bed_file = mut2bed(input.csv, padding=conf['padding'], bed_file=f"{conf['folder']}/{w.sample}.bed")
+    return bed_file
+    
+    
+rule filter_bam:
+    input:
+        csv = "table/{sample}.filter1.csv",
+        bam = "recalib/{sample}.bam",
+    output:
+        bam = "filterbam/{sample}.bam",
+    conda:
+        f"../env/align-env.yml"
+    threads:
+        config['filter_bam']['threads']
+    params:
+        folder = config['filter_bam']['folder'],
+        bed = get_mut_bed
+    shell:
+        "samtools view -bhL {params.bed} {input.bam} > {output.bam}; "
+        "picard BuildBamIndex INPUT={output.bam}; "
+        "rm -f {params.bed}; "
+
+
+rule filter_pileup:
+    input:
+        bam = "recalib/{sample}.bam"
+    output:
+        pileup = "pileup/{sample}.pileup"
+    threads:
+        2
+    conda:
+        f"../env/align-env.yml"
+    params:
+        refgen = full_path('genome'),
+        qual = f"-q {config['mpileup']['MAPQ']} -Q {config['mpileup']['Q']}",
+        cleanpileup = get_script('cleanpileup')
+    shell:
+        "samtools mpileup -f {params.refgen} {params.qual} {input.bam} | {params.cleanpileup} > {output.pileup}"
+
+
+rule IGVnav:
+    input:
+        filter = "table/{sample}.filter1.csv",
+        bam = "filterbam/{sample}.bam"
+    output:
+        IGVNav = "filterbam/{sample}.filter1.txt"
+    threads:
+        1
+    run:
+        # selectinng the right filter2 file from the configs
+        df = pd.read_csv(input.filter, sep='\t', index_col=False).iloc[:, :5]
+        print(f'Loaded {input.filter}')
+        for col in ['Call', 'Tags', 'Notes']:
+            df[col] = ''
+        df.loc[:, 'Chr'] = df['Chr'].str.replace('chr', '')
+        df.to_csv(str(output), sep='\t', index=False)
+        print(f"Written to {output.IGVNav}")

@@ -62,7 +62,6 @@ scripts:
   anno_format: shell/anno_format.mawk
   vcf2table: shell/vcf2table.mawk
   cleanpileup: shell/cleanpileup.mawk
-  varscan2table: shell/varscan2table.mawk
   anno_info: shell/anno_info.mawk
   csv2bed: shell/csv2bed.mawk
   pon2cols: shell/pon2cols.mawk
@@ -198,7 +197,7 @@ Fisher_strand:
 filter:
   threads: 2
   min_read_depth: 100
-  min_TR2: 10
+  min_TR2: 5
   filter_settings: filter_AML.csv
   edit:
     extended_output: False
@@ -212,7 +211,6 @@ filter:
   keep_syn: False
 filter_bam:
     threads: 4
-    stringency_for_bam: loose # from which filter2 should the filter bam be generated
     stringency_for_IGVnav: moderate
     padding: 200
     folder: filterbam
@@ -223,6 +221,7 @@ primer3:  # is applied after filter step 1
   center_offSet: 5 # how much offSet primer pairs can
   use_primer_list: ''
 HDR:
+  threads: 2
   min_HDR_count: 1 # minimum lanes around mutation to make it a putative HDR
   min_similarity: .85 # which similarities to consider as HDR
   padding: 150  # range around mutation to be scanned

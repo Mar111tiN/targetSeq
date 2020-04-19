@@ -60,34 +60,17 @@ rule fisher_strand:
         "../scripts/fisher_strand.py"
 
 
-rule filter_pileup:
-    input:
-        bam = "recalib/{sample}.bam"
-    output:
-        pileup = "pileup/{sample}.pileup"
-    threads:
-        2
-    conda:
-        f"../env/align-env.yml"
-    params:
-        refgen = full_path('genome'),
-        qual = f"-q {config['mpileup']['MAPQ']} -Q {config['mpileup']['Q']}",
-        cleanpileup = get_script('cleanpileup')
-    shell:
-        "samtools mpileup -f {params.refgen} {params.qual} {input.bam} | {params.cleanpileup} > {output.pileup}"
-
-
 rule detect_HDR:
     input:
         filter_file = "table/{sample}.filter1.csv",
-        bam = "recalib/{sample}.bam",
+        bam = "filterbam/{sample}.bam",
         pileup = "pileup/{sample}.pileup"
     output:
         HDR = "table/{sample}.filter1.HDR.csv"
     conda:
         f"../env/HDR-env.yml"
     threads:
-        2
+        config['HDR']['threads']
     params:
         min_sim = config['HDR']['min_similarity'],
         min_q = config['HDR']['min_q'],

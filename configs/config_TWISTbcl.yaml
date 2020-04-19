@@ -156,8 +156,12 @@ freebayes:
   use-bed-file: False
   min-alternate-count: 3
   min-alternate-fraction: 0.005
-  q: 20 # base quality
-  Q: 15 # mapping quality
+  Q: 20 # min base quality
+  Qsum: 0 # min base quality sum to be considered supporting read
+  MAPQ: 15 # min mapping quality
+  mm_Q_limit: 10 # minimum base quality of mismatched read to be considered in mm_count_limit or max_mm_frac
+  max_mm_frac: 1.0 # allowed fraction of mismatches in single read
+  mm_count_limit: 0 # allowed number of mismatches per read
 annovar:
   threads: 10
   path_to_humandb: annotation/annovar/humandb

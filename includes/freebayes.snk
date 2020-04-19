@@ -10,7 +10,8 @@ rule freebayes:
     params:
         refgen = full_path('genome'),
         min = f"-C {config['freebayes']['min-alternate-count']} -F {config['freebayes']['min-alternate-fraction']}",
-        qual = f"-q {config['freebayes']['q']} -Q {config['freebayes']['Q']}"
+        qual = f"-q {config['freebayes']['Q']} -m {config['freebayes']['MAPQ']} -R {config['freebayes']['Qsum']} ",
+        mismatch = f"-Q {config['freebayes']['mm_Q_limit']} -U {config['freebayes']['mm_count_limit']} -z {config['freebayes']['max_mm_frac']}
     conda:
         "../env/freebayes-env.yml"
     shell:

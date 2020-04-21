@@ -57,13 +57,13 @@ new_cols += fisher_cols     # -->COLS
 print(f'Loading HDR-data from file {input.HDR} and merging into annotation.')
 HDR_df = pd.read_csv(input.HDR, sep='\t')
 merge_FH = pd.merge(merge_F, HDR_df, how='inner', on=['Chr', 'Start', 'End', 'Ref', 'Alt', 'Gene'])
-HDR_cols = list(HDR_df.columns[5:])
+HDR_cols = list(HDR_df.columns[6:])
 new_cols += HDR_cols
 
 print(f'Loading Primer3-data from file {input.primer} and merging into annotation.')
 primer_df = pd.read_csv(input.primer, sep='\t')
 merge_FHP = pd.merge(merge_FH, primer_df, how='inner', on=['Chr', 'Start', 'End', 'Ref', 'Alt', 'Gene'])
-primer_cols = list(primer_df.columns[5:])
+primer_cols = list(primer_df.columns[6:])
 new_cols += anno_cols + primer_cols     # -->COLS
 
 

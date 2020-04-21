@@ -88,5 +88,5 @@ rule combine_filter1:
     output: "filter/{sample}.filter1.csv"
     threads: 2
     script:
-        "../scripts/format_table.py"
+        "../scripts/combine_tables.py"
 

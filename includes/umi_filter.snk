@@ -21,6 +21,7 @@ rule umi_group:
         "-s {params.strategy} "   # adjacency is the recommended method of grouping
         "-m {params.min_map_q} "
         "-e {params.edits} "  # for WES-data, 1 is good; for targeted >3
+        "--include-non-pf-reads true "
 
 
 rule call_consensus:

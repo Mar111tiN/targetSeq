@@ -77,9 +77,9 @@ scripts:
   # filter_csv: shell/filter_exome_wFlankingSeq.sh
 demulti:
   extract:
-    mismatch: 1
-    min_dist: 1   # minimum difference in mismatch to next-best hit 
-    max_no_calls: 2  # maximum number of adjacent Ns in barcodes (I think)
+    mismatch: 5
+    min_dist: 2   # minimum difference in mismatch to next-best hit 
+    max_no_calls: 4  # maximum number of adjacent Ns in barcodes (I think)
     threads: 10
     max_mem: 5
   demulti:
@@ -116,14 +116,15 @@ recalib:
   threads: 12
   known_sites: dbsnp_common   # which dbsnp database to use beside gold_standard_indels and phase1k
 UMI_filter:
-  run: False # if False and setup-->UMI is True, run umi-dedup
-  min_reads:  2 # for WES-data, 1 is good; for targeted >3  counts for all fgbio tools
+  run: True # if False and setup-->UMI is True, run umi-dedup
+  min_reads:  1 # for WES-data, 1 is good; for targeted >3  counts for all fgbio tools
   group:
     threads: 10
     mem: 2G
     group_strategy: adjacency
-    min_base_Q: 20
-    min_map_q: 20
+    min_base_Q: 10
+    min_map_q: 10
+    allow_non_PF: True
     edits: 1  # 1 edit in a umi-node should be ok
   call:
     threads: 6
@@ -141,7 +142,7 @@ UMI_filter:
     mem: 6G
     max_error_rate_per_read: 0.05
     max_error_rate_per_base: 0.1
-    min_Q: 20 # input base quality
+    min_Q: 10 # input base quality
     max_no_call: 0.1 # fraction of reads filtered per M/e
 bam_metrix:
   threads: 6
@@ -155,7 +156,7 @@ freebayes:
   use-bed-file: False
   min-alternate-count: 3
   min-alternate-fraction: 0.005
-  Q: 20 # min base quality
+  Q: 10 # min base quality
   Qsum: 0 # min base quality sum to be considered supporting read
   MAPQ: 15 # min mapping quality
   mm_Q_limit: 10 # minimum base quality of mismatched read to be considered in mm_count_limit or max_mm_frac

@@ -1,20 +1,20 @@
-inputdir: /fast/users/szyskam_c/work/downloads/NGSraw/200408-Twist2 # source of raw sequencing run data
+inputdir: /fast/users/szyskam_c/work/downloads/NGSraw/200611_M05651_0052_000000000-J3YDF # source of raw sequencing run data
 workdir: /fast/users/szyskam_c/scratch/projects/AMLValidation # here your results are created
 snakedir: /fast/users/szyskam_c/snakes/develop/targetSeq
-samplesheet: /fast/users/szyskam_c/snakes/develop/targetSeq/sheets/TestRun2_sheet.csv
+samplesheet: /fast/users/szyskam_c/snakes/develop/targetSeq/sheets/AMLValidation_sheet.csv
 setup:
   cleanup:
     run: False
     keep_only_final_bam: True
   phred: 33
-  run: Twist200408
-  library: Twist-IDT  # have to be found at bed_files/SureSelect/<build>/SS_<library_version>_<build>_<Padded | Covered>[_nochr].bed
-  library_version: IDT
+  run: AMLValidation200612
+  library: NebNext  # have to be found at bed_files/SureSelect/<build>/SS_<library_version>_<build>_<Padded | Covered>[_nochr].bed
+  library_version: v1
   platform: illumina
-  Flowcell: J3JGJ
+  Flowcell: J3YDF
   Instrument: M05651
-  platform_unit: M05651.J3JGJ
-  UMI: True  # if UMI information should be used in pipeline
+  platform_unit: M05651.J3YDF
+  UMI: False  # if UMI information should be used in pipeline
   # if UMI_filter is true: deduplication is substituted with the UMI-filter pipeline
   # else: umi-aware deduplication is used 
 

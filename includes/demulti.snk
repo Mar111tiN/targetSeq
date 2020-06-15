@@ -22,13 +22,14 @@ rule extract_barcodes:
       "../env/align-env.yml"
     params:
       mem = f"-Xmx{config['demulti']['extract']['max_mem']}g",
+      read_structure = config['demulti']['extract'],
       bcl_dir = f"{config['inputdir']}/Data/Intensities/BaseCalls",
       barcodes = get_barcode_sheet,
       mismatch = f"MAX_MISMATCHES={config['demulti']['extract']['mismatch']} MIN_MISMATCH_DELTA={config['demulti']['extract']['min_dist']} MAX_NO_CALLS={config['demulti']['extract']['max_no_calls']}"
     shell:
         "picard ExtractIlluminaBarcodes {params.mem} "
         "BASECALLS_DIR={params.bcl_dir} BARCODE_FILE={params.barcodes} LANE=1 "
-        "READ_STRUCTURE=151T8B9M8B151T "
+        "READ_STRUCTURE={params.read_structure} "
         "{params.mismatch} "
         "OUTPUT_DIR=barcodes METRICS_FILE=barcodes/barcode_metrics "
         "&& touch barcodes/ExtractIlluminaBarcodes.done"
@@ -55,6 +56,7 @@ rule demulti:
       "../env/align-env.yml"
     params:
         mem = f"-Xmx{config['demulti']['demulti']['max_mem']}g",
+        read_structure = config['demulti']['extract'],
         bcl_dir = f"{config['inputdir']}/Data/Intensities/BaseCalls",
         barcode_dir = "barcodes",
         library = get_library_sheet,
@@ -62,7 +64,7 @@ rule demulti:
     shell:
         "picard IlluminaBasecallsToSam {params.mem} "
         "BASECALLS_DIR={params.bcl_dir} LIBRARY_PARAMS={params.library} LANE=1 "
-        "READ_STRUCTURE=151T8B8B9M151T "
+        "READ_STRUCTURE={params.read_structure} "
         "BARCODES_DIR={params.barcode_dir} RUN_BARCODE={params.run}  TMP_DIR=${{TMPDIR}} "
         "MOLECULAR_INDEX_TAG=RX ADAPTERS_TO_CHECK=INDEXED SEQUENCING_CENTER=CHARITE_AGDAMM "
         "NUM_PROCESSORS={threads} MAX_RECORDS_IN_RAM=500000 MAX_READS_IN_RAM_PER_TILE=1200000"

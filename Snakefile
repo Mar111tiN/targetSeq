@@ -5,7 +5,7 @@ import argparse
 import math
 
 # ############ SETUP ##############################
-configfile: "configs/config_TWISTbcl.yaml"
+configfile: "configs/config_AMLValidation.yaml"
 # configfile: "configs/config.json"
 workdir: config['workdir']
 
@@ -51,10 +51,10 @@ ref_gen = full_path('genome')
 # specified wildcards have to match the regex
 wildcard_constraints:
     # eg sample cannot contain _ or / to prevent ambiguous wildcards
-    sample = "[^_/.]+",
-    read = "[^_/.]+",
-    read_or_index = "[^_/.]+",
-    filter = "filter[0-9]+"
+    sample = "[^/.]+",
+    # read = "[^_/.]+",
+    # read_or_index = "[^_/.]+",
+    # filter = "filter[0-9]+"
     # folder = "^((?!filter).)*$"
 
 
@@ -65,8 +65,8 @@ rule all:
         expand("umi/{sample}.UF.bam", sample = samples),
         expand("filter/{sample}.filter1.csv", sample = samples),
         expand("filterbam/{sample}.filter1.txt", sample = samples),
-        "QC/libraryQC.html",
-        "QC/insertQC.html",
+        # "QC/libraryQC.html",
+        # "QC/insertQC.html",
         "barcodes/unmatched_barcodes.txt",
         "QC/fastQC.html",
         # expand("coverBED/{sample}.txt", sample = samples)

@@ -62,7 +62,8 @@ rule bam_metrix:
     shell:
         "picard CollectHsMetrics I={input.bam} O={output} R={params.refgen} "
         "BAIT_INTERVALS={params.bait} "
-        "TARGET_INTERVALS={params.target}"
+        "TARGET_INTERVALS={params.target} "
+        "COVERAGE_CAP=10000"
 
 rule bam_QC:
     input:

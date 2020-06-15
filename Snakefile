@@ -62,9 +62,10 @@ wildcard_constraints:
 
 rule all:
     input:
-        expand("umi/{sample}.UF.bam", sample = samples),
-        expand("filter/{sample}.filter1.csv", sample = samples),
-        expand("filterbam/{sample}.filter1.txt", sample = samples),
+        expand("recalib/{sample}.bam", sample = samples), 
+        # expand("umi/{sample}.UF.bam", sample = samples),
+        # expand("filter/{sample}.filter1.csv", sample = samples),
+        # expand("filterbam/{sample}.filter1.txt", sample = samples),
         # "QC/libraryQC.html",
         # "QC/insertQC.html",
         "barcodes/unmatched_barcodes.txt",

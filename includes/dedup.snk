@@ -6,13 +6,14 @@ rule dedup:
     log:
         "logs/dedup/{sample}.log"
     params:
-        metric = lambda w: f"deduped/{w.sample}.metric.txt"
+        metric = lambda w: f"deduped/{w.sample}.metric.txt",
+        deflater = "use_jdk_deflater=true use_jdk_inflater=true " if config['envs'] == "envMac" else ""
     threads:
         config['dedup']['threads']
     conda:
-        "../env/align-env.yml"
+        f"../{config['envs']}/align-env.yml"
     shell:
-        "picard MarkDuplicates I={input} O={output} M={params.metric} REMOVE_DUPLICATES=true &>{log}"
+        "picard MarkDuplicates {params.deflater}I={input} O={output} M={params.metric} REMOVE_DUPLICATES=false &>{log}"
 
 
 rule dedup_umi:
@@ -25,11 +26,12 @@ rule dedup_umi:
     log:
         "logs/dedup/{sample}.log"
     conda:
-        "../env/align-env.yml"
+        f"../{config['envs']}/align-env.yml"
     params:
         metric = lambda w: f"umi_deduped/{w.sample}.metric.txt",
+        deflater = "use_jdk_deflater=true use_jdk_inflater=true " if config['envs'] == "envMac" else "",
         umi_metrics = lambda w: f"umi_deduped/{w.sample}.umi_metric.txt",
         max_mem = config['dedup_umi']['max_mem'],
         remove_dups = "false" if config['dedup_umi']['keep_dups'] else "true"
     shell:
-        "picard UmiAwareMarkDuplicatesWithMateCigar -Xms500m -Xmx{params.max_mem} UMI_METRICS={params.umi_metrics} I={input} O={output[0]} M={params.metric} ASSUME_SORTED=true REMOVE_DUPLICATES={params.remove_dups}; " # &>{log}
+        "picard {params.deflater}UmiAwareMarkDuplicatesWithMateCigar -Xms500m -Xmx{params.max_mem} UMI_METRICS={params.umi_metrics} I={input} O={output[0]} M={params.metric} ASSUME_SORTED=true REMOVE_DUPLICATES={params.remove_dups}; " # &>{log}

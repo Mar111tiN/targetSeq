@@ -1,26 +1,27 @@
-inputdir: /Users/mahtin/Dropbox/Icke/Work/somVar/AMLMono7/Validation/MiSeqValidation200611 # source of raw sequencing run data
-workdir: /fast/users/szyskam_c/scratch/projects/AMLValidation # here your results are created
-snakedir: /fast/users/szyskam_c/snakes/develop/targetSeq
-samplesheet: /fast/users/szyskam_c/snakes/develop/targetSeq/sheets/TestRun2_sheet.csv
+inputdir: /Users/mahtin/Desktop/200611_M05651_0052_000000000-J3YDF # source of raw sequencing run data
+workdir: /Users/mahtin/Dropbox/Icke/Work/somVar/AMLMono7/Validation/200611Results # here your results are created
+snakedir: /Users/mahtin/Sites/Bio/targetSeq
+envs: envMac # the folder of the env-files (MacOS requires different environments)
+samplesheet: /Users/mahtin/Desktop/200611_M05651_0052_000000000-J3YDF/20200610_Samplesheet_Marlon.csv
 setup:
   cleanup:
     run: False
     keep_only_final_bam: True
   phred: 33
-  run: Twist200408
-  library: Twist-IDT  # have to be found at bed_files/SureSelect/<build>/SS_<library_version>_<build>_<Padded | Covered>[_nochr].bed
-  library_version: IDT
+  run: AMLValidation200612
+  library: NebNext  # have to be found at bed_files/SureSelect/<build>/SS_<library_version>_<build>_<Padded | Covered>[_nochr].bed
+  library_version: v1
   platform: illumina
-  Flowcell: J3JGJ
+  Flowcell: J3YDF
   Instrument: M05651
-  platform_unit: M05651.J3JGJ
-  UMI: True  # if UMI information should be used in pipeline
+  platform_unit: M05651.J3YDF
+  UMI: False  # if UMI information should be used in pipeline
   # if UMI_filter is true: deduplication is substituted with the UMI-filter pipeline
   # else: umi-aware deduplication is used 
 
 #### ABSOLUTE PATHS ############
 paths:
-  mystatic: /fast/groups/ag_damm/work/ref/
+  mystatic: /Users/mahtin/Dropbox/Icke/Work/static
   bihstatic: /fast/projects/cubit/current/static_data
   scripts: scripts/ # folder relative to snakedir
   filter_settings: /fast/users/szyskam_c/snakes/develop/somVarWES/info
@@ -53,7 +54,7 @@ ref:
 #### TOOLS SECTION ##############
 tools:
   gatk: gatk # 
-  gatk3: java -jar /fast/users/szyskam_c/work/utils/gatk3.8/GenomeAnalysisTK.jar -T
+  gatk3: java -jar /Users/mahtin/Dropbox/Icke/Work/somVar/somVarTest/tools/gatk3.8/GenomeAnalysisTK.jar -T
   # annovar: perl /fast/users/szyskam_c/tools/annovar2018
   annovar: perl /fast/users/szyskam_c/tools/annovar2019
 scripts:
@@ -73,24 +74,24 @@ scripts:
   reordermatrix: shell/reorder_matrix.mawk
 demulti:
   extract:
-    read_structure: 151T8B9M8B151T
-    mismatch: 5
+    read_structure: 300T8B8B
+    mismatch: 2
     min_dist: 2   # minimum difference in mismatch to next-best hit 
-    max_no_calls: 4  # maximum number of adjacent Ns in barcodes (I think)
-    threads: 10
-    max_mem: 5
+    max_no_calls: 2  # maximum number of adjacent Ns in barcodes (I think)
+    threads: 4
+    max_mem: 2
   demulti:
     threads: 24
-    max_mem: 20
+    max_mem: 12
 fastq:
   threads: 20
 qc:
   samplefactor: 1
 ubamXT:
-    threads: 8
+    threads: 6
     use_jdk: True # use_jdk_in/deflater to avoid SIGSEV error
 map_ubam:
-  threads: 16
+  threads: 2
   clip_overlap: False
   strategy: MostDistant  # alignment strategy for MergeBamAlignment
   use_jdk: True

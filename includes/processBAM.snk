@@ -16,7 +16,7 @@ rule create_GATK_target_list:
     log:
         "logs/realign/{sample}.targetList"
     conda:
-        "../env/gatk3-env.yml"
+        f"../{config['envs']}/gatk3-env.yml"
     params:
         gatk = config['tools']['gatk3'],
         ref = IR_ref
@@ -32,7 +32,7 @@ rule index_bam:
     threads:
         config['bamindex']['threads']
     conda:
-        "../env/align-env.yml"
+        f"../{config['envs']}/align-env.yml"
     shell:
         "picard BuildBamIndex INPUT={input}"
 
@@ -49,13 +49,14 @@ rule realignGATK:
     threads:
         config['realignGATK']['threads']
     conda:
-        "../env/gatk3-env.yml"
+        f"../{config['envs']}/gatk3-env.yml"
     params:
         gatk = config['tools']['gatk3'],
+        deflater = "--use_jdk_deflater --use_jdk_inflater " if config['envs'] == "envMac" else "",
         ref = IR_ref
     shell:
-        "{params.gatk} IndelRealigner {params.ref} "
-        "-targetIntervals {input.intervals} -I {input.bam} -o {output} &>{log}"
+        "{params.gatk} IndelRealigner {params.deflater}{params.ref} "
+        "-targetIntervals {input.intervals} -I {input.bam} -o {output}"
 
 
 rule base_recalib:
@@ -69,13 +70,14 @@ rule base_recalib:
     threads:
         config['recalib']['threads']
     conda:
-        "../env/gatk4-env.yml"
+        f"../{config['envs']}/gatk4-env.yml"
     params:
         gatk = config['tools']['gatk'],
+        deflater = "-jdk_deflater true -jdk_inflater true " if config['envs'] == "envMac" else "",
         genome = f"-R {full_path('genome')}",
         known_sites = f"--known-sites {full_path('gold_standard_indels')} --known-sites {full_path('phase1k_indels')} --known-sites {full_path(config['recalib']['known_sites'])}"
     shell:
-        "{params.gatk} BaseRecalibrator -I {input.bam} {params.genome} {params.known_sites} -O {output.table} &>{log}; "
+        "{params.gatk} BaseRecalibrator -I {input.bam} {params.genome} {params.known_sites} -O {output.table}; "
 
 
 rule apply_BQSR:
@@ -91,13 +93,14 @@ rule apply_BQSR:
     threads:
         config['recalib']['threads']
     conda:
-        "../env/gatk4-env.yml"
+        f"../{config['envs']}/gatk4-env.yml"
     params:
         gatk = config['tools']['gatk'],
+        deflater = "-jdk_deflater true -jdk_inflater true " if config['envs'] == "envMac" else "",
         genome = f"-R {full_path('genome')}",
         known_sites = f"--known-sites {full_path('gold_standard_indels')} --known-sites {full_path('phase1k_indels')} --known-sites {full_path(config['recalib']['known_sites'])}"  
     shell:
         # apply recalibration table on input
-        "{params.gatk} ApplyBQSR -I {input.bam} {params.genome} --bqsr-recal-file {input.table} -O {output.bam} &>>{log}; "
+        "{params.gatk} ApplyBQSR -I {input.bam} {params.genome} --bqsr-recal-file {input.table} -O {output.bam}; "
         # recreate recalibration table from output for QC
-        "{params.gatk} BaseRecalibrator -I {output.bam} {params.genome} {params.known_sites} -O {output.table} &>>{log}"
+        "{params.gatk} BaseRecalibrator -I {output.bam} {params.genome} {params.known_sites} -O {output.table}"

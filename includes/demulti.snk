@@ -19,10 +19,10 @@ rule extract_barcodes:
     threads:
         config['demulti']['extract']['threads']
     conda:
-      "../env/align-env.yml"
+      f"../{config['envs']}/align-env.yml"
     params:
       mem = f"-Xmx{config['demulti']['extract']['max_mem']}g",
-      read_structure = config['demulti']['extract'],
+      read_structure = config['demulti']['extract']['read_structure'],
       bcl_dir = f"{config['inputdir']}/Data/Intensities/BaseCalls",
       barcodes = get_barcode_sheet,
       mismatch = f"MAX_MISMATCHES={config['demulti']['extract']['mismatch']} MIN_MISMATCH_DELTA={config['demulti']['extract']['min_dist']} MAX_NO_CALLS={config['demulti']['extract']['max_no_calls']}"
@@ -48,24 +48,24 @@ rule demulti:
     input:
         "barcodes/ExtractIlluminaBarcodes.done"
     output:
-        expand("ubam/{sample}.bam", sample = samples),
-        "ubam/unmatched.bam"
+        expand("ubam/{sample}.bam", sample = samples)
     threads:
         config['demulti']['demulti']['threads']
     conda:
-      "../env/align-env.yml"
+      f"../{config['envs']}/align-env.yml"
     params:
         mem = f"-Xmx{config['demulti']['demulti']['max_mem']}g",
-        read_structure = config['demulti']['extract'],
+        read_structure = config['demulti']['extract']['read_structure'],
         bcl_dir = f"{config['inputdir']}/Data/Intensities/BaseCalls",
         barcode_dir = "barcodes",
         library = get_library_sheet,
         run = config['setup']['run']
     shell:
         "picard IlluminaBasecallsToSam {params.mem} "
+        "USE_JDK_DEFLATER=true USE_JDK_INFLATER=true "
         "BASECALLS_DIR={params.bcl_dir} LIBRARY_PARAMS={params.library} LANE=1 "
         "READ_STRUCTURE={params.read_structure} "
-        "BARCODES_DIR={params.barcode_dir} RUN_BARCODE={params.run}  TMP_DIR=${{TMPDIR}} "
+        "BARCODES_DIR={params.barcode_dir} RUN_BARCODE={params.run} TMP_DIR=${{TMPDIR}} "
         "MOLECULAR_INDEX_TAG=RX ADAPTERS_TO_CHECK=INDEXED SEQUENCING_CENTER=CHARITE_AGDAMM "
         "NUM_PROCESSORS={threads} MAX_RECORDS_IN_RAM=500000 MAX_READS_IN_RAM_PER_TILE=1200000"
 
@@ -75,6 +75,6 @@ rule get_unmatched:
     output:
         "barcodes/unmatched_barcodes.txt"
     conda:
-        "../env/align-env.yml"
+        f"../{config['envs']}/align-env.yml"
     shell:
         "samtools view {input} | awk '{{print substr($12,6) }}' | sort | uniq -c | sort -rn > {output}"

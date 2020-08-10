@@ -73,10 +73,10 @@ scripts:
   reordermatrix: shell/reorder_matrix.mawk
 demulti:
   extract:
-    read_structure: 151T8B9M8B151T
-    mismatch: 5
+    read_structure: 300T8B8B
+    mismatch: 1
     min_dist: 2   # minimum difference in mismatch to next-best hit 
-    max_no_calls: 4  # maximum number of adjacent Ns in barcodes (I think)
+    max_no_calls: 1  # maximum number of adjacent Ns in barcodes (I think)
     threads: 10
     max_mem: 5
   demulti:

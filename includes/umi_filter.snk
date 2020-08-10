@@ -7,7 +7,7 @@ rule umi_group:
     threads:
         config['UMI_filter']['group']['threads']
     conda:
-        f"../{config['envs']}/ubam-env.yml"
+        "../env/ubam-env.yml"
     log:
         "logs/umi/{sample}.UG.log"
     params:
@@ -32,7 +32,7 @@ rule call_consensus:
     threads:
         config['UMI_filter']['call']['threads']
     conda:
-        f"../{config['envs']}/ubam-env.yml"
+        "../env/ubam-env.yml"
     params:
         mem = f"-Xmx{config['UMI_filter']['call']['mem']}",
         min_reads = config['UMI_filter']['min_reads'],
@@ -60,7 +60,7 @@ rule mark_CR:
     threads:
         config['map_ubam']['threads']
     conda:
-        f"../{config['envs']}/align-env.yml"
+        "../env/align-env.yml"
     params:
         deflater = "use_jdk_deflater=true use_jdk_inflater=true" if config['map_ubam']['use_jdk'] else ""
     shell:
@@ -78,7 +78,7 @@ rule remap_CR:
     threads:
         config['UMI_filter']['remap']['threads']
     conda:
-        f"../{config['envs']}/align-env.yml"
+        "../env/align-env.yml"
     params:
         mem = f"-Xmx{config['UMI_filter']['remap']['mem']}",
         bwa_threads = config['map_ubam']['threads'],
@@ -130,7 +130,7 @@ rule filter_consensus:
     threads:
         config['UMI_filter']['filter']['threads']
     conda:
-        f"../{config['envs']}/ubam-env.yml"
+        "../env/ubam-env.yml"
     params:
         mem = f"-Xmx{config['UMI_filter']['filter']['mem']}",
         min_reads = config['UMI_filter']['min_reads'],

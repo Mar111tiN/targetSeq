@@ -1,4 +1,4 @@
-inputdir: /Users/mahtin/Dropbox/Icke/Work/somVar/AMLMono7/Validation/MiSeqValidation200611 # source of raw sequencing run data
+inputdir: /fast/users/szyskam_c/work/downloads/NGSraw/200408-Twist2 # source of raw sequencing run data
 workdir: /fast/users/szyskam_c/scratch/projects/AMLValidation # here your results are created
 snakedir: /fast/users/szyskam_c/snakes/develop/targetSeq
 samplesheet: /fast/users/szyskam_c/snakes/develop/targetSeq/sheets/TestRun2_sheet.csv

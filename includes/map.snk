@@ -22,13 +22,13 @@ rule mark_adapters:
     log:
         "logs/ubam/{sample}.log"
     conda:
-        f"../{config['envs']}/ubam-env.yml"
+        "../env/ubam-env.yml"
     params:
         read_group_info = get_RG_info,
         read_structure = "+T +T +M" if config['setup']['UMI'] else "+T +T",
-        deflater = "use_jdk_deflater=true use_jdk_inflater=true " if config['envs'] == "envMac" else ""
+        deflater = "use_jdk_deflater=true use_jdk_inflater=true" if config['ubamXT']['use_jdk'] else ""
     shell:
-        "picard MarkIlluminaAdapters {params.deflater}I={input} O={output.bam} M={output.metrix} TMP_DIR=$TMPDIR"
+        "picard MarkIlluminaAdapters {params.deflater} I={input} O={output.bam} M={output.metrix} TMP_DIR=$TMPDIR"
 
 
 ######################################################################################
@@ -57,7 +57,7 @@ rule make_ref_genome:
         sed_cmd = get_sed,
         refgen = full_path('genome')
     conda:
-        f"../{config['envs']}/align-env.yml"
+        "../env/align-env.yml"
     message:
         "Genome indexed by bwa"
     shell:
@@ -94,16 +94,16 @@ rule map_ubam:
     threads:
         config['map_ubam']['threads'] + 6
     conda:
-        f"../{config['envs']}/align-env.yml"
+        "../env/align-env.yml"
     params:
         bwa_threads = config['map_ubam']['threads'],
         refgen = full_path('genome'),
         clip_overlap = get_clip,
         alignment_strategy = config['map_ubam']['strategy'],
-        deflater = "use_jdk_deflater=true use_jdk_inflater=true " if config['envs'] == "envMac" else ""
+        deflater = "use_jdk_deflater=true use_jdk_inflater=true" if config['map_ubam']['use_jdk'] else ""
     shell:
         "mkdir -p fastQC/{wildcards.sample}; "
-        "picard SamToFastq {params.deflater}"
+        "picard SamToFastq {params.deflater} "
         "I={input.bam} FASTQ=/dev/stdout "
         "ClIPPING_ATTRIBUTE=XT "        # use XT tag for clipping
         "CLIPPING_ACTION=2 "             # base-quality of clipped bases is set to 2
@@ -113,7 +113,7 @@ rule map_ubam:
         "tee >(fastqc stdin:{wildcards.sample} -o fastQC/) |" # tee fastQC data
         # pipe to bwa mem
         "bwa mem -M -t {params.bwa_threads} -p {params.refgen} /dev/stdin | "
-        "picard MergeBamAlignment {params.deflater}R={params.refgen} "
+        "picard MergeBamAlignment R={params.refgen} "
         "UNMAPPED_BAM={input.bam} "
         "ALIGNED_BAM=/dev/stdin "
         "O={output.bam} "

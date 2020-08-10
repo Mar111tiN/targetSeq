@@ -7,7 +7,7 @@ rule fastqc:
     log:
         "logs/fastqc/{sample}_{read}.log"
     conda:
-        f"../{config['envs']}/fastQC-env.yml"
+        "../env/fastQC-env.yml"
     script:
         "../scripts/fastQC.py"
 
@@ -19,7 +19,7 @@ rule fast_multiQC:
         "QC/fastQC.html"
     threads: 2
     conda:
-        f"../{config['envs']}/fastQC-env.yml"
+        "../env/fastQC-env.yml"
     shell:
         "multiqc -f -o QC/ -n fastQC --interactive fastQC/"  # interactive for big number of files
 
@@ -40,7 +40,7 @@ rule cover_BED:
         prettifyBed = get_script('prettifyBED'),
         refgen = full_path('genome')
     conda:
-        f"../{config['envs']}/bedcover-env.yml"
+        "../env/bedcover-env.yml"
     script:
         "../scripts/bedcover.py"
 
@@ -51,7 +51,7 @@ rule bam_metrix:
     output:
         "bam_metrics/{sample}.metrics"
     conda:
-        f"../{config['envs']}/align-env.yml"
+        "../env/align-env.yml"
     log:
         "logs/bam_metrix/{sample}.log"
     threads: config['bam_metrix']['threads']
@@ -86,7 +86,7 @@ rule insert_metrix:
         metric = "insert_metrics/{sample}.metrics",
         pdf = "insert_metrics/{sample}.metrics.pdf"
     conda:
-        f"../{config['envs']}/picard-env.yml"
+        "../env/picard-env.yml"
     log:
         "logs/bam_metrix/{sample}.log"
     threads: config['bam_metrix']['threads']
@@ -100,7 +100,7 @@ rule insert_QC:
     output:
         "QC/insertQC.html"
     conda:
-        f"../{config['envs']}/fastQC-env.yml"
+        "../env/fastQC-env.yml"
     threads: 2
     shell:
         "multiqc -f -o QC/ -n insertQC --interactive insert_metrics/; "

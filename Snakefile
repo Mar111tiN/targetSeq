@@ -5,7 +5,7 @@ import argparse
 import math
 
 # ############ SETUP ##############################
-configfile: "configs/config_AMLMac.yaml"
+configfile: "configs/config_AMLValidation.yaml"
 # configfile: "configs/config.json"
 workdir: config['workdir']
 
